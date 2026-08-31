@@ -2,6 +2,7 @@
 name = "evidence-rag-bench"
 version = "0.1.0"
 description = "A reproducible benchmark for evidence-grounded retrieval-augmented generation."
+readme = "README.md"
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "fastapi>=0.115",
