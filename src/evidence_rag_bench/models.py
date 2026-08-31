@@ -37,4 +37,4 @@ class RetrievedChunk(Chunk):
     """A chunk plus the score and stage that selected it."""
 
     score: float
-    stage: Literal["bm25"] = "bm25"
+    stage: Literal["bm25", "tfidf", "hybrid"] = "bm25"
