@@ -1,0 +1,97 @@
+"""FastAPI application exposing auditable evidence-grounded answers."""
+
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Literal
+
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
+from pydantic import BaseModel, Field
+
+from evidence_rag_bench.config import Settings, get_settings
+from evidence_rag_bench.corpus.chunking import chunk_document
+from evidence_rag_bench.corpus.manifest import load_manifest, validate_manifest
+from evidence_rag_bench.evaluation.runner import run_split
+from evidence_rag_bench.grounding.service import answer_question
+from evidence_rag_bench.retrieval.bm25 import BM25Retriever
+
+
+class AskRequest(BaseModel):
+    """Validated browser or API question payload."""
+
+    question: str = Field(min_length=1, max_length=1000)
+    top_k: int = Field(default=3, ge=1, le=10)
+
+
+class EvaluationRequest(BaseModel):
+    """Validated benchmark execution request."""
+
+    split: Literal["dev", "test"]
+    k: int = Field(default=3, ge=1, le=10)
+
+
+@dataclass(frozen=True)
+class AppServices:
+    """Immutable runtime dependencies shared by route handlers."""
+
+    settings: Settings
+    retriever: BM25Retriever
+
+
+def build_services(project_root: Path | None) -> AppServices:
+    """Build the local corpus and BM25 index once at application creation."""
+
+    settings = get_settings(project_root)
+    records = load_manifest(settings.corpus_dir / "manifest.jsonl")
+    validate_manifest(records, settings.project_root)
+    chunks = [
+        chunk for record in records for chunk in chunk_document(record, settings.project_root)
+    ]
+    return AppServices(settings=settings, retriever=BM25Retriever(chunks))
+
+
+def create_app(project_root: Path | None = None) -> FastAPI:
+    """Create a local API and static evidence viewer."""
+
+    services = build_services(project_root)
+    app = FastAPI(title="Evidence RAG Bench", version="0.1.0")
+    ui_dir = Path(__file__).parents[1] / "ui"
+
+    @app.get("/health")
+    def health() -> dict[str, str]:
+        return {"status": "ok", "mode": "deterministic"}
+
+    @app.post("/v1/ask")
+    def ask(request: AskRequest):
+        question = request.question.strip()
+        if not question:
+            raise HTTPException(
+                status_code=422, detail="question must contain non-whitespace characters"
+            )
+        return answer_question(question, services.retriever, threshold=0.0, top_k=request.top_k)
+
+    @app.post("/v1/evaluations/run")
+    def run_evaluation(request: EvaluationRequest) -> dict[str, object]:
+        report, report_path = run_split(services.settings.project_root, request.split, request.k)
+        return {"report_id": request.split, "report_path": str(report_path), "report": report}
+
+    @app.get("/v1/evaluations/{report_id}")
+    def get_evaluation(report_id: Literal["dev", "test"]):
+        report_path = services.settings.artifacts_dir / "reports" / f"bm25-{report_id}.json"
+        if not report_path.is_file():
+            raise HTTPException(status_code=404, detail="report has not been generated")
+        return FileResponse(report_path, media_type="application/json")
+
+    @app.get("/")
+    def index() -> FileResponse:
+        return FileResponse(ui_dir / "index.html")
+
+    @app.get("/app.js")
+    def javascript() -> FileResponse:
+        return FileResponse(ui_dir / "app.js", media_type="application/javascript")
+
+    @app.get("/styles.css")
+    def stylesheet() -> FileResponse:
+        return FileResponse(ui_dir / "styles.css", media_type="text/css")
+
+    return app

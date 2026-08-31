@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Evidence RAG Bench</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">REPRODUCIBLE RAG BENCHMARK</p>
+      <h1>Evidence RAG Bench</h1>
+      <p class="lede">Ask a question against the fixed corpus. Every answer must show its evidence or abstain.</p>
+      <form id="ask-form">
+        <label for="question">Question</label>
+        <textarea id="question" required maxlength="1000" placeholder="How does lexical retrieval work?"></textarea>
+        <button type="submit">Retrieve evidence</button>
+      </form>
+      <section id="result" aria-live="polite" hidden>
+        <p id="status" class="status"></p>
+        <p id="answer"></p>
+        <p id="reason"></p>
+        <p id="latency"></p>
+        <div id="evidence"></div>
+      </section>
+    </main>
+    <script src="/app.js"></script>
+  </body>
+</html>
