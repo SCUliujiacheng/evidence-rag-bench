@@ -1,6 +1,7 @@
 """Shared immutable data contracts for corpus, retrieval, and grounding."""
 
 from datetime import date
+from typing import Literal
 
 from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field
 
@@ -30,3 +31,10 @@ class Chunk(BaseModel):
     source_url: str = Field(min_length=1)
     text: str = Field(min_length=1)
     ordinal: int = Field(ge=0)
+
+
+class RetrievedChunk(Chunk):
+    """A chunk plus the score and stage that selected it."""
+
+    score: float
+    stage: Literal["bm25"] = "bm25"

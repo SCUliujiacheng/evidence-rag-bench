@@ -1,0 +1,4 @@
+{"case_id":"dev-001","split":"dev","question":"What sparse lexical baseline is named in the corpus?","answerability":"answerable","gold_chunk_ids":["retrieval-notes:0000"],"reference_answer":"BM25","notes":"Direct lexical retrieval question."}
+{"case_id":"dev-002","split":"dev","question":"Why should a grounded answer include evidence chunks?","answerability":"answerable","gold_chunk_ids":["retrieval-notes:0000"],"reference_answer":"So a reader can inspect the source supporting a claim.","notes":"Citation rationale."}
+{"case_id":"dev-003","split":"dev","question":"Which vector database is required by the benchmark?","answerability":"insufficient","gold_chunk_ids":[],"reference_answer":null,"notes":"The fixture corpus has no vector database requirement."}
+{"case_id":"dev-004","split":"dev","question":"What is the capital of Australia?","answerability":"unanswerable","gold_chunk_ids":[],"reference_answer":null,"notes":"Outside the fixed technical corpus."}
