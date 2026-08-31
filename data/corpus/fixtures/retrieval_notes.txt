@@ -1,0 +1,4 @@
+Retrieval systems rank source passages before generation. BM25 is a sparse lexical baseline
+that scores documents using query terms. Grounded answers should cite evidence chunks so a
+reader can inspect the source that supports each claim. When evidence is insufficient, a
+reliable system should abstain rather than invent an answer.
