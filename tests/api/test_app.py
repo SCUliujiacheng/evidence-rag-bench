@@ -31,3 +31,15 @@ def test_ask_returns_evidence_bound_citations() -> None:
     assert {citation["chunk_id"] for citation in body["citations"]} <= {
         item["chunk_id"] for item in body["evidence"]
     }
+
+
+def test_ask_abstains_when_the_corpus_has_no_query_evidence() -> None:
+    project_root = Path(__file__).parents[2]
+    response = TestClient(create_app(project_root)).post(
+        "/v1/ask",
+        json={"question": "Which galactic orchestra won a music prize?", "top_k": 3},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "abstain"
+    assert response.json()["citations"] == []

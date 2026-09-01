@@ -30,6 +30,8 @@ class HybridRetriever:
             self._tfidf.search(query, candidate_count),
         ):
             for rank, result in enumerate(ranking, start=1):
+                if result.score <= 0:
+                    continue
                 fused_scores[result.chunk_id] = fused_scores.get(result.chunk_id, 0.0) + 1 / (
                     self._rrf_k + rank
                 )
