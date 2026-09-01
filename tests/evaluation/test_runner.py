@@ -1,5 +1,5 @@
 from evidence_rag_bench.evaluation.cases import EvaluationCase
-from evidence_rag_bench.evaluation.runner import run_retrieval_benchmark
+from evidence_rag_bench.evaluation.runner import build_retriever, run_retrieval_benchmark
 from evidence_rag_bench.models import Chunk
 from evidence_rag_bench.retrieval.bm25 import BM25Retriever
 
@@ -38,3 +38,19 @@ def test_runner_returns_case_results_and_metadata() -> None:
     assert report.metrics["recall_at_1"] == 1.0
     assert report.case_results[0].retrieved_chunk_ids == ["notes:0000"]
     assert report.metadata["git_revision"] == "test"
+
+
+def test_build_retriever_selects_tfidf_baseline() -> None:
+    chunks = [
+        Chunk(
+            doc_id="notes",
+            chunk_id="notes:0000",
+            source_url="https://example.org/notes",
+            text="BM25 uses lexical query terms",
+            ordinal=0,
+        )
+    ]
+
+    retriever = build_retriever("tfidf", chunks)
+
+    assert retriever.search("lexical", k=1)[0].stage == "tfidf"

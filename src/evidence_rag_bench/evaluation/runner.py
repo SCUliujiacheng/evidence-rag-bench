@@ -14,7 +14,10 @@ from evidence_rag_bench.corpus.chunking import chunk_document
 from evidence_rag_bench.corpus.manifest import load_manifest, validate_manifest
 from evidence_rag_bench.evaluation.cases import EvaluationCase, load_cases
 from evidence_rag_bench.evaluation.metrics import retrieval_metrics
+from evidence_rag_bench.models import Chunk
 from evidence_rag_bench.retrieval.bm25 import BM25Retriever
+from evidence_rag_bench.retrieval.hybrid import HybridRetriever
+from evidence_rag_bench.retrieval.tfidf import TfidfRetriever
 
 
 class CaseResult(BaseModel):
@@ -37,7 +40,7 @@ class BenchmarkReport(BaseModel):
 
 
 def run_retrieval_benchmark(
-    retriever: BM25Retriever,
+    retriever: BM25Retriever | TfidfRetriever | HybridRetriever,
     cases: list[EvaluationCase],
     k: int,
     metadata: dict[str, str],
@@ -55,8 +58,22 @@ def run_retrieval_benchmark(
     return BenchmarkReport(
         metrics=retrieval_metrics(result_mapping, cases, k),
         case_results=case_results,
-        metadata={**metadata, "retriever": "bm25", "k": str(k)},
+        metadata={**metadata, "k": str(k)},
     )
+
+
+def build_retriever(
+    retriever_name: str, chunks: list[Chunk]
+) -> BM25Retriever | TfidfRetriever | HybridRetriever:
+    """Construct one named local retrieval baseline over the same chunks."""
+
+    if retriever_name == "bm25":
+        return BM25Retriever(chunks)
+    if retriever_name == "tfidf":
+        return TfidfRetriever(chunks)
+    if retriever_name == "hybrid":
+        return HybridRetriever(chunks)
+    raise ValueError(f"unsupported retriever: {retriever_name}")
 
 
 def git_revision(project_root: Path) -> str:
@@ -70,7 +87,9 @@ def git_revision(project_root: Path) -> str:
         return "unavailable"
 
 
-def run_split(project_root: Path, split: str, k: int) -> tuple[BenchmarkReport, Path]:
+def run_split(
+    project_root: Path, split: str, k: int, retriever_name: str = "bm25"
+) -> tuple[BenchmarkReport, Path]:
     """Build a local BM25 index, evaluate one split, and persist the report."""
 
     settings = get_settings(project_root)
@@ -86,7 +105,7 @@ def run_split(project_root: Path, split: str, k: int) -> tuple[BenchmarkReport, 
     if not cases:
         raise ValueError(f"no {split} cases found")
     report = run_retrieval_benchmark(
-        BM25Retriever(chunks),
+        build_retriever(retriever_name, chunks),
         cases,
         k,
         {
@@ -94,11 +113,12 @@ def run_split(project_root: Path, split: str, k: int) -> tuple[BenchmarkReport, 
             "git_revision": git_revision(settings.project_root),
             "created_at": datetime.now(UTC).isoformat(),
             "split": split,
+            "retriever": retriever_name,
         },
     )
     report_dir = settings.artifacts_dir / "reports"
     report_dir.mkdir(parents=True, exist_ok=True)
-    report_path = report_dir / f"bm25-{split}.json"
+    report_path = report_dir / f"{retriever_name}-{split}.json"
     report_path.write_text(report.model_dump_json(indent=2), encoding="utf-8")
     return report, report_path
 
@@ -106,11 +126,12 @@ def run_split(project_root: Path, split: str, k: int) -> tuple[BenchmarkReport, 
 def main() -> None:
     """Run a named benchmark split from the command line."""
 
-    parser = argparse.ArgumentParser(description="Run the Evidence RAG BM25 benchmark.")
+    parser = argparse.ArgumentParser(description="Run an Evidence RAG retrieval benchmark.")
     parser.add_argument("--split", choices=("dev", "test"), required=True)
     parser.add_argument("--k", type=int, default=3)
+    parser.add_argument("--retriever", choices=("bm25", "tfidf", "hybrid"), default="bm25")
     arguments = parser.parse_args()
-    _, report_path = run_split(Path.cwd(), arguments.split, arguments.k)
+    _, report_path = run_split(Path.cwd(), arguments.split, arguments.k, arguments.retriever)
     print(json.dumps({"report_path": str(report_path)}))
 
 
