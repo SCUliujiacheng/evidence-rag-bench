@@ -1,7 +1,7 @@
 """Controlled retrieval of manifest-locked public corpus documents."""
 
 import hashlib
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from pathlib import Path
 from urllib.request import Request, urlopen
 
@@ -32,3 +32,13 @@ def fetch_document(
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_bytes(payload)
     return destination
+
+
+def fetch_manifest(
+    records: Sequence[DocumentRecord],
+    project_root: Path,
+    fetch_bytes: Callable[[str], bytes] = download_bytes,
+) -> list[Path]:
+    """Fetch every pre-validated record in a manifest and return local paths."""
+
+    return [fetch_document(record, project_root, fetch_bytes) for record in records]

@@ -1,11 +1,11 @@
 import hashlib
 from pathlib import Path
 
-from evidence_rag_bench.corpus.fetch import fetch_document
+from evidence_rag_bench.corpus.fetch import fetch_manifest
 from evidence_rag_bench.models import DocumentRecord
 
 
-def test_fetch_document_writes_bytes_after_checksum_validation(tmp_path: Path) -> None:
+def test_fetch_manifest_writes_each_checksum_locked_document(tmp_path: Path) -> None:
     payload = b"retrieval systems need auditable evidence"
     record = DocumentRecord(
         doc_id="source",
@@ -18,6 +18,7 @@ def test_fetch_document_writes_bytes_after_checksum_validation(tmp_path: Path) -
         scope_note="test fixture",
     )
 
-    fetch_document(record, tmp_path, fetch_bytes=lambda _: payload)
+    fetched = fetch_manifest([record], tmp_path, fetch_bytes=lambda _: payload)
 
     assert (tmp_path / record.text_path).read_bytes() == payload
+    assert fetched == [tmp_path / record.text_path]
