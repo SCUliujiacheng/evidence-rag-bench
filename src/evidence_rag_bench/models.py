@@ -37,4 +37,5 @@ class RetrievedChunk(Chunk):
     """A chunk plus the score and stage that selected it."""
 
     score: float
+    relevance_score: float | None = None
     stage: Literal["bm25", "tfidf", "hybrid"] = "bm25"

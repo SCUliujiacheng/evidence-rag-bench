@@ -11,7 +11,9 @@ from pydantic import BaseModel, Field
 from evidence_rag_bench.config import Settings, get_settings
 from evidence_rag_bench.corpus.chunking import chunk_document
 from evidence_rag_bench.corpus.manifest import load_manifest, validate_manifest
+from evidence_rag_bench.evaluation.cases import load_cases
 from evidence_rag_bench.evaluation.runner import run_split
+from evidence_rag_bench.grounding.calibration import ScoredCase, select_threshold
 from evidence_rag_bench.grounding.service import answer_question
 from evidence_rag_bench.retrieval.hybrid import HybridRetriever
 
@@ -37,6 +39,7 @@ class AppServices:
     settings: Settings
     retriever: HybridRetriever
     corpus_document_count: int
+    abstention_threshold: float
 
 
 def build_services(project_root: Path | None) -> AppServices:
@@ -48,10 +51,20 @@ def build_services(project_root: Path | None) -> AppServices:
     chunks = [
         chunk for record in records for chunk in chunk_document(record, settings.project_root)
     ]
+    retriever = HybridRetriever(chunks)
+    dev_cases = load_cases(settings.eval_dir / "open_source_dev.jsonl")
+    scored_cases = []
+    for case in dev_cases:
+        results = retriever.search(case.question, 3)
+        score = results[0].relevance_score if results else 0.0
+        scored_cases.append(
+            ScoredCase(score=score or 0.0, answerable=case.answerability == "answerable")
+        )
     return AppServices(
         settings=settings,
-        retriever=HybridRetriever(chunks),
+        retriever=retriever,
         corpus_document_count=len(records),
+        abstention_threshold=select_threshold(scored_cases),
     )
 
 
@@ -63,12 +76,13 @@ def create_app(project_root: Path | None = None) -> FastAPI:
     ui_dir = Path(__file__).parents[1] / "ui"
 
     @app.get("/health")
-    def health() -> dict[str, str | int]:
+    def health() -> dict[str, str | int | float]:
         return {
             "status": "ok",
             "mode": "deterministic",
             "retriever": "hybrid",
             "corpus_document_count": services.corpus_document_count,
+            "abstention_threshold": services.abstention_threshold,
         }
 
     @app.post("/v1/ask")
@@ -78,7 +92,12 @@ def create_app(project_root: Path | None = None) -> FastAPI:
             raise HTTPException(
                 status_code=422, detail="question must contain non-whitespace characters"
             )
-        return answer_question(question, services.retriever, threshold=0.0, top_k=request.top_k)
+        return answer_question(
+            question,
+            services.retriever,
+            threshold=services.abstention_threshold,
+            top_k=request.top_k,
+        )
 
     @app.post("/v1/evaluations/run")
     def run_evaluation(request: EvaluationRequest) -> dict[str, object]:

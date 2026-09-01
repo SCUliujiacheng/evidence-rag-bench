@@ -13,7 +13,9 @@ from evidence_rag_bench.config import get_settings
 from evidence_rag_bench.corpus.chunking import chunk_document
 from evidence_rag_bench.corpus.manifest import load_manifest, validate_manifest
 from evidence_rag_bench.evaluation.cases import EvaluationCase, load_cases
+from evidence_rag_bench.evaluation.grounding_metrics import abstention_metrics
 from evidence_rag_bench.evaluation.metrics import retrieval_metrics
+from evidence_rag_bench.grounding.service import AskResult, answer_question
 from evidence_rag_bench.models import Chunk
 from evidence_rag_bench.retrieval.bm25 import BM25Retriever
 from evidence_rag_bench.retrieval.hybrid import HybridRetriever
@@ -39,6 +41,27 @@ class BenchmarkReport(BaseModel):
     metadata: dict[str, str]
 
 
+class GroundedCaseResult(BaseModel):
+    """One answer-or-abstain trace for end-to-end evaluation."""
+
+    model_config = ConfigDict(frozen=True)
+
+    case_id: str
+    status: str
+    citation_ids: list[str]
+    evidence_ids: list[str]
+    latency_ms: float
+
+
+class GroundedBenchmarkReport(BaseModel):
+    """Aggregate end-to-end grounding behavior for a fixed case set."""
+
+    model_config = ConfigDict(frozen=True)
+
+    metrics: dict[str, float]
+    case_results: list[GroundedCaseResult]
+
+
 def run_retrieval_benchmark(
     retriever: BM25Retriever | TfidfRetriever | HybridRetriever,
     cases: list[EvaluationCase],
@@ -59,6 +82,47 @@ def run_retrieval_benchmark(
         metrics=retrieval_metrics(result_mapping, cases, k),
         case_results=case_results,
         metadata={**metadata, "k": str(k)},
+    )
+
+
+def run_grounded_benchmark(
+    retriever: BM25Retriever | TfidfRetriever | HybridRetriever,
+    cases: list[EvaluationCase],
+    top_k: int,
+    threshold: float,
+) -> GroundedBenchmarkReport:
+    """Run answer/abstain behavior and measure citation validity and latency."""
+
+    answers: list[tuple[EvaluationCase, AskResult]] = [
+        (case, answer_question(case.question, retriever, threshold, top_k)) for case in cases
+    ]
+    statuses = {case.case_id: answer.status for case, answer in answers}
+    case_results = [
+        GroundedCaseResult(
+            case_id=case.case_id,
+            status=answer.status,
+            citation_ids=[citation.chunk_id for citation in answer.citations],
+            evidence_ids=[evidence.chunk_id for evidence in answer.evidence],
+            latency_ms=answer.latency_ms,
+        )
+        for case, answer in answers
+    ]
+    citation_valid_count = sum(
+        set(result.citation_ids).issubset(result.evidence_ids)
+        for result in case_results
+        if result.status == "answer"
+    )
+    answer_count = sum(result.status == "answer" for result in case_results)
+    sorted_latencies = sorted(result.latency_ms for result in case_results)
+    percentile_index = max(0, round(0.95 * len(sorted_latencies)) - 1)
+    return GroundedBenchmarkReport(
+        metrics={
+            **abstention_metrics(statuses, cases),
+            "citation_valid_rate": citation_valid_count / answer_count if answer_count else 0.0,
+            "latency_p50_ms": sorted_latencies[len(sorted_latencies) // 2],
+            "latency_p95_ms": sorted_latencies[percentile_index],
+        },
+        case_results=case_results,
     )
 
 
@@ -130,6 +194,38 @@ def run_split(
     return report, report_path
 
 
+def run_grounded_split(
+    project_root: Path,
+    split: str,
+    top_k: int,
+    retriever_name: str = "hybrid",
+    manifest_filename: str = "manifest.jsonl",
+    case_filename: str | None = None,
+    threshold: float = 0.0,
+) -> tuple[GroundedBenchmarkReport, Path]:
+    """Run end-to-end answer/abstain evaluation and persist a JSON report."""
+
+    settings = get_settings(project_root)
+    records = load_manifest(settings.corpus_dir / manifest_filename)
+    validate_manifest(records, settings.project_root)
+    chunks = [
+        chunk for record in records for chunk in chunk_document(record, settings.project_root)
+    ]
+    cases_path = settings.eval_dir / (case_filename or f"{split}.jsonl")
+    cases = [case for case in load_cases(cases_path) if case.split == split]
+    if not cases:
+        raise ValueError(f"no {split} cases found")
+    report = run_grounded_benchmark(
+        build_retriever(retriever_name, chunks), cases, top_k=top_k, threshold=threshold
+    )
+    report_dir = settings.artifacts_dir / "reports"
+    report_dir.mkdir(parents=True, exist_ok=True)
+    corpus_label = Path(manifest_filename).stem.replace("_manifest", "")
+    report_path = report_dir / f"{corpus_label}-{retriever_name}-{split}-grounded.json"
+    report_path.write_text(report.model_dump_json(indent=2), encoding="utf-8")
+    return report, report_path
+
+
 def main() -> None:
     """Run a named benchmark split from the command line."""
 
@@ -139,15 +235,26 @@ def main() -> None:
     parser.add_argument("--retriever", choices=("bm25", "tfidf", "hybrid"), default="bm25")
     parser.add_argument("--manifest", default="manifest.jsonl")
     parser.add_argument("--cases")
+    parser.add_argument("--mode", choices=("retrieval", "grounded"), default="retrieval")
     arguments = parser.parse_args()
-    _, report_path = run_split(
-        Path.cwd(),
-        arguments.split,
-        arguments.k,
-        arguments.retriever,
-        arguments.manifest,
-        arguments.cases,
-    )
+    if arguments.mode == "grounded":
+        _, report_path = run_grounded_split(
+            Path.cwd(),
+            arguments.split,
+            arguments.k,
+            arguments.retriever,
+            arguments.manifest,
+            arguments.cases,
+        )
+    else:
+        _, report_path = run_split(
+            Path.cwd(),
+            arguments.split,
+            arguments.k,
+            arguments.retriever,
+            arguments.manifest,
+            arguments.cases,
+        )
     print(json.dumps({"report_path": str(report_path)}))
 
 

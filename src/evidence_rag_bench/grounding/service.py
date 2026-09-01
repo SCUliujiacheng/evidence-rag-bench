@@ -52,7 +52,11 @@ def answer_question(question: str, retriever: Retriever, threshold: float, top_k
     started = perf_counter()
     evidence = retriever.search(question, top_k)
     elapsed_ms = (perf_counter() - started) * 1000
-    if not evidence or evidence[0].score < threshold:
+    relevance_score = evidence[0].relevance_score if evidence else None
+    effective_score = (
+        relevance_score if relevance_score is not None else (evidence[0].score if evidence else 0.0)
+    )
+    if not evidence or effective_score < threshold:
         return abstention("insufficient_evidence", elapsed_ms)
 
     citation = Citation(chunk_id=evidence[0].chunk_id)

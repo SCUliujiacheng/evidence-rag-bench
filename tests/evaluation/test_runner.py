@@ -5,15 +5,17 @@ from pathlib import Path
 from evidence_rag_bench.evaluation.cases import EvaluationCase
 from evidence_rag_bench.evaluation.runner import (
     build_retriever,
+    run_grounded_benchmark,
+    run_grounded_split,
     run_retrieval_benchmark,
     run_split,
 )
 from evidence_rag_bench.models import Chunk
-from evidence_rag_bench.retrieval.bm25 import BM25Retriever
+from evidence_rag_bench.retrieval.hybrid import HybridRetriever
 
 
 def test_runner_returns_case_results_and_metadata() -> None:
-    retriever = BM25Retriever(
+    retriever = HybridRetriever(
         [
             Chunk(
                 doc_id="notes",
@@ -102,3 +104,58 @@ def test_run_split_accepts_a_named_manifest_and_case_file(tmp_path: Path) -> Non
     )
 
     assert report.metrics["recall_at_1"] == 1.0
+
+
+def test_grounded_benchmark_reports_abstention_metrics() -> None:
+    retriever = HybridRetriever(
+        [
+            Chunk(
+                doc_id="notes",
+                chunk_id="notes:0000",
+                source_url="https://example.org/notes",
+                text="Evidence retrieval ranks source passages.",
+                ordinal=0,
+            )
+        ]
+    )
+    cases = [
+        EvaluationCase(
+            case_id="answerable",
+            split="dev",
+            question="What does evidence retrieval rank?",
+            answerability="answerable",
+            gold_chunk_ids=["notes:0000"],
+            reference_answer="source passages",
+            notes="fixture",
+        ),
+        EvaluationCase(
+            case_id="unanswerable",
+            split="dev",
+            question="galactic orchestra prize",
+            answerability="unanswerable",
+            gold_chunk_ids=[],
+            reference_answer=None,
+            notes="fixture",
+        ),
+    ]
+
+    report = run_grounded_benchmark(retriever, cases, top_k=3, threshold=0.0)
+
+    assert report.metrics["abstention_recall"] == 1.0
+    assert report.metrics["false_abstain_rate"] == 0.0
+
+
+def test_run_grounded_split_writes_an_end_to_end_report() -> None:
+    project_root = Path(__file__).parents[2]
+
+    report, report_path = run_grounded_split(
+        project_root,
+        "test",
+        top_k=3,
+        retriever_name="hybrid",
+        manifest_filename="open_source_manifest.jsonl",
+        case_filename="open_source_test.jsonl",
+    )
+
+    assert report_path.is_file()
+    assert "citation_valid_rate" in report.metrics

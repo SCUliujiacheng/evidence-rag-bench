@@ -25,16 +25,18 @@ class HybridRetriever:
             raise ValueError("k must be at least one")
         candidate_count = len(self._chunks_by_id)
         fused_scores: dict[str, float] = {}
-        for ranking in (
-            self._bm25.search(query, candidate_count),
-            self._tfidf.search(query, candidate_count),
-        ):
+        relevance_scores: dict[str, float] = {}
+        bm25_ranking = self._bm25.search(query, candidate_count)
+        tfidf_ranking = self._tfidf.search(query, candidate_count)
+        for ranking in (bm25_ranking, tfidf_ranking):
             for rank, result in enumerate(ranking, start=1):
                 if result.score <= 0:
                     continue
                 fused_scores[result.chunk_id] = fused_scores.get(result.chunk_id, 0.0) + 1 / (
                     self._rrf_k + rank
                 )
+        for result in tfidf_ranking:
+            relevance_scores[result.chunk_id] = result.score
         ranked_ids = sorted(fused_scores, key=lambda chunk_id: (-fused_scores[chunk_id], chunk_id))[
             :k
         ]
@@ -42,6 +44,7 @@ class HybridRetriever:
             RetrievedChunk(
                 **self._chunks_by_id[chunk_id].model_dump(),
                 score=fused_scores[chunk_id],
+                relevance_score=relevance_scores.get(chunk_id, 0.0),
                 stage="hybrid",
             )
             for chunk_id in ranked_ids

@@ -32,6 +32,19 @@ claim of general RAG superiority.
   are retained for abstention evaluation and are excluded from retrieval-score
   denominators.
 
+## End-to-end abstention check
+
+The API calibrates its relevance threshold only from the development split
+(`0.184` in this run). When that frozen threshold is applied to the held-out
+set, citation validity is 1.00 but abstention precision/recall are 0.25/0.50;
+the false-answer and false-abstain rates are both 0.50. In particular,
+`os-test-007` contains plausible LangChain vocabulary but asks for an
+unsupported recommendation, while several concise FAISS questions fall below
+the lexical relevance threshold. This is an intentional recorded limitation:
+ranking confidence alone is not a semantic-support verifier. The next
+iteration needs a separately evaluated entailment or structured LLM judge,
+without allowing that judge to inspect held-out labels during calibration.
+
 ## Reproduce
 
 ```bash
