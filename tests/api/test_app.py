@@ -63,3 +63,11 @@ def test_evaluation_endpoint_uses_the_open_source_benchmark() -> None:
 
     assert saved_report.status_code == 200
     assert saved_report.json()["metadata"]["case_filename"] == "open_source_test.jsonl"
+
+
+def test_demo_serves_a_vector_favicon() -> None:
+    project_root = Path(__file__).parents[2]
+    response = TestClient(create_app(project_root)).get("/favicon.svg")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("image/svg+xml")

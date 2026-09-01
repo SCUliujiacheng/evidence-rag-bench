@@ -132,4 +132,8 @@ def create_app(project_root: Path | None = None) -> FastAPI:
     def stylesheet() -> FileResponse:
         return FileResponse(ui_dir / "styles.css", media_type="text/css")
 
+    @app.get("/favicon.svg")
+    def favicon() -> FileResponse:
+        return FileResponse(ui_dir / "favicon.svg", media_type="image/svg+xml")
+
     return app
