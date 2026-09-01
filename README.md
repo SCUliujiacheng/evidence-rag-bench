@@ -19,4 +19,4 @@ Versioned JSONL development and held-out test cases measure Recall@k, MRR@k and 
 
 The default demo uses three hash-locked, license-attributed open-source technical documents (FAISS, scikit-learn, and LangChain) and an 8-case held-out retrieval split. On that held-out split, RRF Hybrid reaches Recall@3 0.83, MRR@3 0.67, and nDCG@3 0.71; see [benchmark results](docs/benchmark-results.md) for the protocol, failures, and reproduction commands. This is a small benchmark, not a general performance claim.
 
-See the [design](docs/superpowers/specs/2026-09-01-evidence-rag-bench-design.md), [implementation plan](docs/superpowers/plans/2026-09-01-evidence-rag-bench-mvp.md), [data attribution](docs/data-attribution.md), and [benchmark results](docs/benchmark-results.md).
+See the [design](docs/superpowers/specs/2026-09-01-evidence-rag-bench-design.md), [implementation plan](docs/superpowers/plans/2026-09-01-evidence-rag-bench-mvp.md), [data attribution](docs/data-attribution.md), [benchmark results](docs/benchmark-results.md), [decision log](docs/decision-log.md), and [manual evaluation rubric](docs/evaluation-rubric.md).
