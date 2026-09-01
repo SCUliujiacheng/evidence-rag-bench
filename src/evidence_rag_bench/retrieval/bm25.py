@@ -32,7 +32,9 @@ class BM25Retriever:
         if k < 1:
             raise ValueError("k must be at least one")
         scores = self._index.get_scores(tokenize(query))
-        ranked_indices = sorted(range(len(self._chunks)), key=lambda index: (-scores[index], index))[:k]
+        ranked_indices = sorted(
+            range(len(self._chunks)), key=lambda index: (-scores[index], index)
+        )[:k]
         return [
             RetrievedChunk(
                 **self._chunks[index].model_dump(), score=float(scores[index]), stage="bm25"
