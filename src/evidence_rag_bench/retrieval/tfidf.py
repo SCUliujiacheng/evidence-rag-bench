@@ -14,7 +14,7 @@ class TfidfRetriever:
         if not chunks:
             raise ValueError("TfidfRetriever requires at least one chunk")
         self._chunks = list(chunks)
-        self._vectorizer = TfidfVectorizer(lowercase=True, ngram_range=(1, 2))
+        self._vectorizer = TfidfVectorizer(lowercase=True, ngram_range=(1, 2), stop_words="english")
         self._matrix = self._vectorizer.fit_transform(chunk.text for chunk in self._chunks)
 
     def search(self, query: str, k: int) -> list[RetrievedChunk]:

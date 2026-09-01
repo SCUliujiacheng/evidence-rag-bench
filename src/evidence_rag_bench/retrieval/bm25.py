@@ -1,8 +1,10 @@
 """A deterministic BM25 retrieval baseline."""
 
+import re
 from collections.abc import Sequence
 
 from rank_bm25 import BM25Okapi
+from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 
 from evidence_rag_bench.models import Chunk, RetrievedChunk
 
@@ -10,7 +12,9 @@ from evidence_rag_bench.models import Chunk, RetrievedChunk
 def tokenize(text: str) -> list[str]:
     """Tokenize the baseline with lowercase whitespace terms."""
 
-    return text.lower().split()
+    return [
+        token for token in re.findall(r"[a-z0-9]+", text.lower()) if token not in ENGLISH_STOP_WORDS
+    ]
 
 
 class BM25Retriever:

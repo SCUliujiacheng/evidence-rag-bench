@@ -12,21 +12,19 @@ exercise ambiguity or out-of-corpus behavior. Metrics below were generated on
 
 | Retriever | Recall@3 | MRR@3 | nDCG@3 |
 | --- | ---: | ---: | ---: |
-| BM25 | 0.50 | 0.28 | 0.33 |
-| TF-IDF (word + bigram) | 0.50 | 0.22 | 0.29 |
-| RRF Hybrid | **0.67** | **0.50** | **0.54** |
+| BM25 | 0.83 | 0.58 | 0.65 |
+| TF-IDF (word + bigram) | 0.83 | 0.58 | 0.65 |
+| RRF Hybrid | **0.83** | **0.67** | **0.71** |
 
-The hybrid ranker is selected as the demo baseline because it improves all
-three evidence-retrieval measures on the untouched held-out split. This is a
-small corpus, so the table is evidence for engineering behavior rather than a
+The hybrid ranker is selected as the demo baseline because it improves ranking
+quality over the single retrievers on the untouched held-out split. Common
+English stop words are removed in both lexical baselines; this change was made
+before this reported rerun and applies identically to every retriever. This is
+a small corpus, so the table is evidence for engineering behavior rather than a
 claim of general RAG superiority.
 
 ## Failure analysis
 
-- `os-test-002`: the hybrid system retrieves a nearby FAISS trade-off chunk
-  (`faiss-readme:0007`) but misses the compression-specific source
-  (`faiss-readme:0003`). This points to chunk-boundary and lexical-overlap
-  sensitivity.
 - `os-test-006`: the question uses "provide" while the relevant LangSmith text
   uses "support". Both sparse baselines and RRF miss `langchain-readme:0007`,
   motivating a true embedding retriever in the next milestone.
