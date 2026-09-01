@@ -2,26 +2,28 @@
 
 ## Protocol
 
-The benchmark uses three hash-locked open-source README documents: FAISS (MIT),
-scikit-learn (BSD-3), and LangChain (MIT). The development and held-out test
-sets contain eight cases each; six cases per split have evidence labels and two
-exercise ambiguity or out-of-corpus behavior. Metrics below were generated on
-2026-09-01 with the default 80-word chunker and `k=3`.
+The benchmark uses six hash-locked open-source technical documents from the
+FAISS (MIT), scikit-learn (BSD-3), and LangChain (MIT) repositories. The
+development and held-out test sets contain twelve cases each; nine cases per
+split have evidence labels and three exercise ambiguity or out-of-corpus
+behavior. Metrics below were generated on 2026-09-01 with the default 80-word
+chunker and `k=3`.
 
 ## Held-out retrieval results
 
 | Retriever | Recall@3 | MRR@3 | nDCG@3 |
 | --- | ---: | ---: | ---: |
-| BM25 | 0.83 | 0.58 | 0.65 |
-| TF-IDF (word + bigram) | 0.83 | 0.58 | 0.65 |
-| RRF Hybrid | **0.83** | **0.67** | **0.71** |
+| BM25 | **0.89** | 0.54 | 0.63 |
+| TF-IDF (word + bigram) | 0.78 | **0.61** | **0.65** |
+| RRF Hybrid | 0.78 | 0.56 | 0.61 |
 
-The hybrid ranker is selected as the demo baseline because it improves ranking
-quality over the single retrievers on the untouched held-out split. Common
-English stop words are removed in both lexical baselines; this change was made
-before this reported rerun and applies identically to every retriever. This is
-a small corpus, so the table is evidence for engineering behavior rather than a
-claim of general RAG superiority.
+No retriever dominates every metric after the corpus expansion. BM25 has the
+best held-out coverage; TF-IDF has the best first-rank and graded ranking
+metrics. The demo retains Hybrid because it exposes a positive TF-IDF relevance
+signal for a safer answer/abstain contract. Common English stop words are
+removed in both lexical baselines. This is a small corpus, so the table is
+evidence for engineering behavior rather than a claim of general RAG
+superiority.
 
 ## Failure analysis
 

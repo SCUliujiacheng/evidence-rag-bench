@@ -12,6 +12,12 @@ BM25, word/bigram TF-IDF, and reciprocal-rank fusion run offline and on the
 same chunks. The first held-out run selected RRF Hybrid because it improved
 MRR@3 and nDCG@3, not because it was assumed to be better.
 
+After the corpus grew, BM25 led the development split on retrieval coverage,
+while Hybrid retained a positive TF-IDF relevance signal that lets the API
+abstain on an unseen query. The API therefore defaults to Hybrid for safe
+delivery; benchmark tables continue to show every retriever rather than
+claiming one universal winner.
+
 ## Keep rank score separate from abstention confidence
 
 RRF scores only describe rank position. The system now retains a TF-IDF
