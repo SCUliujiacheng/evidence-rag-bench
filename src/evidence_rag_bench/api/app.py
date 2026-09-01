@@ -101,12 +101,21 @@ def create_app(project_root: Path | None = None) -> FastAPI:
 
     @app.post("/v1/evaluations/run")
     def run_evaluation(request: EvaluationRequest) -> dict[str, object]:
-        report, report_path = run_split(services.settings.project_root, request.split, request.k)
+        report, report_path = run_split(
+            services.settings.project_root,
+            request.split,
+            request.k,
+            retriever_name="hybrid",
+            manifest_filename="open_source_manifest.jsonl",
+            case_filename=f"open_source_{request.split}.jsonl",
+        )
         return {"report_id": request.split, "report_path": str(report_path), "report": report}
 
     @app.get("/v1/evaluations/{report_id}")
     def get_evaluation(report_id: Literal["dev", "test"]):
-        report_path = services.settings.artifacts_dir / "reports" / f"bm25-{report_id}.json"
+        report_path = (
+            services.settings.artifacts_dir / "reports" / f"open_source-hybrid-{report_id}.json"
+        )
         if not report_path.is_file():
             raise HTTPException(status_code=404, detail="report has not been generated")
         return FileResponse(report_path, media_type="application/json")

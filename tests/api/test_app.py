@@ -44,3 +44,22 @@ def test_ask_abstains_when_the_corpus_has_no_query_evidence() -> None:
     assert response.status_code == 200
     assert response.json()["status"] == "abstain"
     assert response.json()["citations"] == []
+
+
+def test_evaluation_endpoint_uses_the_open_source_benchmark() -> None:
+    project_root = Path(__file__).parents[2]
+    client = TestClient(create_app(project_root))
+    response = client.post(
+        "/v1/evaluations/run",
+        json={"split": "test", "k": 3},
+    )
+
+    body = response.json()
+    assert response.status_code == 200
+    assert body["report"]["metadata"]["manifest_filename"] == "open_source_manifest.jsonl"
+    assert body["report"]["metadata"]["retriever"] == "hybrid"
+
+    saved_report = client.get("/v1/evaluations/test")
+
+    assert saved_report.status_code == 200
+    assert saved_report.json()["metadata"]["case_filename"] == "open_source_test.jsonl"
