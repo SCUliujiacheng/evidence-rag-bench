@@ -88,20 +88,24 @@ def git_revision(project_root: Path) -> str:
 
 
 def run_split(
-    project_root: Path, split: str, k: int, retriever_name: str = "bm25"
+    project_root: Path,
+    split: str,
+    k: int,
+    retriever_name: str = "bm25",
+    manifest_filename: str = "manifest.jsonl",
+    case_filename: str | None = None,
 ) -> tuple[BenchmarkReport, Path]:
     """Build a local BM25 index, evaluate one split, and persist the report."""
 
     settings = get_settings(project_root)
-    manifest_path = settings.corpus_dir / "manifest.jsonl"
+    manifest_path = settings.corpus_dir / manifest_filename
     records = load_manifest(manifest_path)
     validate_manifest(records, settings.project_root)
     chunks = [
         chunk for record in records for chunk in chunk_document(record, settings.project_root)
     ]
-    cases = [
-        case for case in load_cases(settings.eval_dir / f"{split}.jsonl") if case.split == split
-    ]
+    cases_path = settings.eval_dir / (case_filename or f"{split}.jsonl")
+    cases = [case for case in load_cases(cases_path) if case.split == split]
     if not cases:
         raise ValueError(f"no {split} cases found")
     report = run_retrieval_benchmark(
@@ -114,11 +118,14 @@ def run_split(
             "created_at": datetime.now(UTC).isoformat(),
             "split": split,
             "retriever": retriever_name,
+            "manifest_filename": manifest_filename,
+            "case_filename": cases_path.name,
         },
     )
     report_dir = settings.artifacts_dir / "reports"
     report_dir.mkdir(parents=True, exist_ok=True)
-    report_path = report_dir / f"{retriever_name}-{split}.json"
+    corpus_label = Path(manifest_filename).stem.replace("_manifest", "")
+    report_path = report_dir / f"{corpus_label}-{retriever_name}-{split}.json"
     report_path.write_text(report.model_dump_json(indent=2), encoding="utf-8")
     return report, report_path
 
@@ -130,8 +137,17 @@ def main() -> None:
     parser.add_argument("--split", choices=("dev", "test"), required=True)
     parser.add_argument("--k", type=int, default=3)
     parser.add_argument("--retriever", choices=("bm25", "tfidf", "hybrid"), default="bm25")
+    parser.add_argument("--manifest", default="manifest.jsonl")
+    parser.add_argument("--cases")
     arguments = parser.parse_args()
-    _, report_path = run_split(Path.cwd(), arguments.split, arguments.k, arguments.retriever)
+    _, report_path = run_split(
+        Path.cwd(),
+        arguments.split,
+        arguments.k,
+        arguments.retriever,
+        arguments.manifest,
+        arguments.cases,
+    )
     print(json.dumps({"report_path": str(report_path)}))
 
 

@@ -13,7 +13,7 @@ from evidence_rag_bench.corpus.chunking import chunk_document
 from evidence_rag_bench.corpus.manifest import load_manifest, validate_manifest
 from evidence_rag_bench.evaluation.runner import run_split
 from evidence_rag_bench.grounding.service import answer_question
-from evidence_rag_bench.retrieval.bm25 import BM25Retriever
+from evidence_rag_bench.retrieval.hybrid import HybridRetriever
 
 
 class AskRequest(BaseModel):
@@ -35,19 +35,24 @@ class AppServices:
     """Immutable runtime dependencies shared by route handlers."""
 
     settings: Settings
-    retriever: BM25Retriever
+    retriever: HybridRetriever
+    corpus_document_count: int
 
 
 def build_services(project_root: Path | None) -> AppServices:
     """Build the local corpus and BM25 index once at application creation."""
 
     settings = get_settings(project_root)
-    records = load_manifest(settings.corpus_dir / "manifest.jsonl")
+    records = load_manifest(settings.corpus_dir / "open_source_manifest.jsonl")
     validate_manifest(records, settings.project_root)
     chunks = [
         chunk for record in records for chunk in chunk_document(record, settings.project_root)
     ]
-    return AppServices(settings=settings, retriever=BM25Retriever(chunks))
+    return AppServices(
+        settings=settings,
+        retriever=HybridRetriever(chunks),
+        corpus_document_count=len(records),
+    )
 
 
 def create_app(project_root: Path | None = None) -> FastAPI:
@@ -58,8 +63,13 @@ def create_app(project_root: Path | None = None) -> FastAPI:
     ui_dir = Path(__file__).parents[1] / "ui"
 
     @app.get("/health")
-    def health() -> dict[str, str]:
-        return {"status": "ok", "mode": "deterministic"}
+    def health() -> dict[str, str | int]:
+        return {
+            "status": "ok",
+            "mode": "deterministic",
+            "retriever": "hybrid",
+            "corpus_document_count": services.corpus_document_count,
+        }
 
     @app.post("/v1/ask")
     def ask(request: AskRequest):

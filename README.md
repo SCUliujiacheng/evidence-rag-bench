@@ -1,6 +1,6 @@
 # Evidence RAG Bench
 
-An evaluation-first, evidence-grounded RAG reference implementation. It validates corpus provenance, retrieves source chunks with a local BM25 baseline, checks citation IDs against returned evidence, and abstains when evidence is insufficient.
+An evaluation-first, evidence-grounded RAG reference implementation. It validates corpus provenance, compares BM25/TF-IDF/RRF-hybrid retrieval, checks citation IDs against returned evidence, and abstains when evidence is insufficient.
 
 ## Run locally
 
@@ -17,6 +17,6 @@ Open `http://127.0.0.1:8000/`. The demo provides either evidence-bound citations
 
 Versioned JSONL development and held-out test cases measure Recall@k, MRR@k and nDCG@k over gold evidence IDs. Generated reports record corpus-manifest hash, Git revision, time and configuration under ignored `artifacts/reports/`.
 
-The committed CC-BY fixture corpus is intentionally tiny, so its perfect fixture result is not a real-world performance claim. The next milestone expands to licensed public technical sources, 50--100 reviewed questions, dense/hybrid retrieval and manual error analysis.
+The default demo uses three hash-locked, license-attributed open-source technical documents (FAISS, scikit-learn, and LangChain) and an 8-case held-out retrieval split. On that held-out split, RRF Hybrid reaches Recall@3 0.67, MRR@3 0.50, and nDCG@3 0.54; see [benchmark results](docs/benchmark-results.md) for the protocol, failures, and reproduction commands. This is a small benchmark, not a general performance claim.
 
-See the [design](docs/superpowers/specs/2026-09-01-evidence-rag-bench-design.md) and [implementation plan](docs/superpowers/plans/2026-09-01-evidence-rag-bench-mvp.md).
+See the [design](docs/superpowers/specs/2026-09-01-evidence-rag-bench-design.md), [implementation plan](docs/superpowers/plans/2026-09-01-evidence-rag-bench-mvp.md), [data attribution](docs/data-attribution.md), and [benchmark results](docs/benchmark-results.md).

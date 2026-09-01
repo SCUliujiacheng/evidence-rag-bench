@@ -12,6 +12,8 @@ def test_health_reports_ready_client() -> None:
 
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
+    assert response.json()["corpus_document_count"] == 3
+    assert response.json()["retriever"] == "hybrid"
 
 
 def test_ask_returns_evidence_bound_citations() -> None:
