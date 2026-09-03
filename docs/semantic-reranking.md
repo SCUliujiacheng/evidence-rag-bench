@@ -20,15 +20,20 @@ uv sync --extra semantic
 ```
 
 `SentenceTransformersCrossEncoder` loads the named model lazily, so CI and the
-baseline demo do not download model weights. A future benchmark run must report
-the exact model revision, device, candidate depth, development-selected
-threshold, held-out metrics, and latency alongside the existing lexical
-baselines. It may use development cases to choose a threshold, but it must not
-change the frozen held-out labels or tune on them.
+baseline demo do not download model weights. Reports record model identity and
+candidate depth alongside the existing lexical configuration. A run may use
+development cases to choose a threshold, but it must not change the frozen
+held-out labels or tune on them.
 
 ## Acceptance gate
 
-Before this stage becomes a demo default, it needs a committed held-out report
-that improves a predeclared metric without degrading answer/abstain safety, a
-failure analysis, and an explicit evaluation of semantic support. Until then,
-Hybrid remains the default deterministic retriever.
+The initial CPU experiment (ten-doc corpus, 16 frozen held-out cases,
+candidate depth 10) improved Hybrid MRR@3 from 0.603 to 0.654 and nDCG@3 from
+0.646 to 0.684, with unchanged Recall@3 (0.769). With a development-selected
+threshold, false-answer rate fell from 0.67 to 0.00 and abstention recall rose
+from 0.33 to 1.00; p50 latency rose to 377ms. Full measurements and caveats
+are in [benchmark results](benchmark-results.md).
+
+Hybrid remains the default deterministic retriever because BM25 still wins
+retrieval coverage, the CrossEncoder adds CPU latency, and a relevance model is
+not yet an explicit answer-entailment verifier.

@@ -20,7 +20,14 @@ from evidence_rag_bench.grounding.service import AskResult, answer_question
 from evidence_rag_bench.models import Chunk
 from evidence_rag_bench.retrieval.bm25 import BM25Retriever
 from evidence_rag_bench.retrieval.hybrid import HybridRetriever
+from evidence_rag_bench.retrieval.rerank import (
+    PassageScorer,
+    SemanticReranker,
+    SentenceTransformersCrossEncoder,
+)
 from evidence_rag_bench.retrieval.tfidf import TfidfRetriever
+
+SEMANTIC_RERANK_MODEL = "cross-encoder/ms-marco-MiniLM-L6-v2"
 
 
 class CaseResult(BaseModel):
@@ -65,7 +72,7 @@ class GroundedBenchmarkReport(BaseModel):
 
 
 def run_retrieval_benchmark(
-    retriever: BM25Retriever | TfidfRetriever | HybridRetriever,
+    retriever: BM25Retriever | TfidfRetriever | HybridRetriever | SemanticReranker,
     cases: list[EvaluationCase],
     k: int,
     metadata: dict[str, str],
@@ -88,7 +95,7 @@ def run_retrieval_benchmark(
 
 
 def run_grounded_benchmark(
-    retriever: BM25Retriever | TfidfRetriever | HybridRetriever,
+    retriever: BM25Retriever | TfidfRetriever | HybridRetriever | SemanticReranker,
     cases: list[EvaluationCase],
     top_k: int,
     threshold: float,
@@ -131,8 +138,10 @@ def run_grounded_benchmark(
 
 
 def build_retriever(
-    retriever_name: str, chunks: list[Chunk]
-) -> BM25Retriever | TfidfRetriever | HybridRetriever:
+    retriever_name: str,
+    chunks: list[Chunk],
+    semantic_scorer: PassageScorer | None = None,
+) -> BM25Retriever | TfidfRetriever | HybridRetriever | SemanticReranker:
     """Construct one named local retrieval baseline over the same chunks."""
 
     if retriever_name == "bm25":
@@ -141,6 +150,9 @@ def build_retriever(
         return TfidfRetriever(chunks)
     if retriever_name == "hybrid":
         return HybridRetriever(chunks)
+    if retriever_name == "semantic-rerank":
+        scorer = semantic_scorer or SentenceTransformersCrossEncoder(SEMANTIC_RERANK_MODEL)
+        return SemanticReranker(HybridRetriever(chunks), scorer)
     raise ValueError(f"unsupported retriever: {retriever_name}")
 
 
@@ -188,6 +200,14 @@ def run_split(
             "retriever": retriever_name,
             "manifest_filename": manifest_filename,
             "case_filename": cases_path.name,
+            **(
+                {
+                    "semantic_model": SEMANTIC_RERANK_MODEL,
+                    "semantic_candidate_k": "10",
+                }
+                if retriever_name == "semantic-rerank"
+                else {}
+            ),
         },
     )
     report_dir = settings.artifacts_dir / "reports"
@@ -252,6 +272,14 @@ def run_grounded_split(
             "threshold_source": calibration_path.name
             if calibration_path
             else "explicit_or_default",
+            **(
+                {
+                    "semantic_model": SEMANTIC_RERANK_MODEL,
+                    "semantic_candidate_k": "10",
+                }
+                if retriever_name == "semantic-rerank"
+                else {}
+            ),
         },
     )
     report_dir = settings.artifacts_dir / "reports"
@@ -268,7 +296,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Run an Evidence RAG retrieval benchmark.")
     parser.add_argument("--split", choices=("dev", "test"), required=True)
     parser.add_argument("--k", type=int, default=3)
-    parser.add_argument("--retriever", choices=("bm25", "tfidf", "hybrid"), default="bm25")
+    parser.add_argument(
+        "--retriever",
+        choices=("bm25", "tfidf", "hybrid", "semantic-rerank"),
+        default="bm25",
+    )
     parser.add_argument("--manifest", default="manifest.jsonl")
     parser.add_argument("--cases")
     parser.add_argument(

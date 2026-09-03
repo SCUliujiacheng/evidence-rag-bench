@@ -66,6 +66,26 @@ def test_build_retriever_selects_tfidf_baseline() -> None:
     assert retriever.search("lexical", k=1)[0].stage == "tfidf"
 
 
+def test_build_retriever_selects_semantic_reranker_with_an_injected_scorer() -> None:
+    class Scorer:
+        def score(self, query: str, passages: list[str]) -> list[float]:
+            return [0.5] * len(passages)
+
+    chunks = [
+        Chunk(
+            doc_id="notes",
+            chunk_id="notes:0000",
+            source_url="https://example.org/notes",
+            text="BM25 uses lexical query terms",
+            ordinal=0,
+        )
+    ]
+
+    retriever = build_retriever("semantic-rerank", chunks, semantic_scorer=Scorer())
+
+    assert retriever.search("lexical", k=1)[0].stage == "rerank"
+
+
 def test_run_split_accepts_a_named_manifest_and_case_file(tmp_path: Path) -> None:
     corpus_dir = tmp_path / "data" / "corpus"
     eval_dir = tmp_path / "data" / "eval"
