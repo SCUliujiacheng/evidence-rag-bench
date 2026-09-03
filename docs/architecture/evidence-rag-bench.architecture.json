@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Evidence RAG Bench Architecture",
+    "output": "evidence-rag-bench-architecture.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/SCUliujiacheng/evidence-rag-bench",
+      "revision": "7affaceaec01ef79643b747feb7544387a3c5146"
+    },
+    "views": [
+      { "id": "request", "label": "Evidence-bound answer path", "focus": ["browser", "api", "retriever", "grounding"], "note": "A question receives evidence or an explicit abstention." },
+      { "id": "evaluation", "label": "Reproducible evaluation", "focus": ["corpus", "retriever", "benchmark", "reports"], "note": "Hash-locked inputs produce reportable benchmark artifacts." },
+      { "id": "semantic", "label": "Optional semantic stage", "focus": ["retriever", "reranker", "benchmark"], "note": "The CrossEncoder re-ranks fixed candidates but remains opt-in." }
+    ]
+  },
+  "components": [
+    { "id": "browser", "type": "frontend", "label": "Evidence Viewer", "sublabel": "Static browser UI", "pos": [40, 285], "size": [145, 64], "sources": [{ "path": "src/evidence_rag_bench/ui/index.html" }] },
+    { "id": "api", "type": "backend", "label": "FastAPI Service", "sublabel": "/v1/ask + evaluation API", "pos": [265, 285], "size": [165, 64], "sources": [{ "path": "src/evidence_rag_bench/api/app.py" }] },
+    { "id": "grounding", "type": "security", "label": "Grounding Guardrail", "sublabel": "Citation validation + abstention", "pos": [515, 285], "size": [175, 64], "sources": [{ "path": "src/evidence_rag_bench/grounding/service.py" }] },
+    { "id": "retriever", "type": "backend", "label": "Local Retrieval", "sublabel": "BM25 / TF-IDF / RRF Hybrid", "pos": [515, 120], "size": [175, 64], "sources": [{ "path": "src/evidence_rag_bench/retrieval/hybrid.py" }] },
+    { "id": "reranker", "type": "cloud", "label": "Optional CrossEncoder", "sublabel": "Local MiniLM semantic re-rank", "pos": [755, 120], "size": [185, 64], "sources": [{ "path": "src/evidence_rag_bench/retrieval/rerank.py" }] },
+    { "id": "corpus", "type": "database", "label": "Versioned Corpus", "sublabel": "15 licensed, hash-locked sources", "pos": [265, 120], "size": [175, 64], "sources": [{ "path": "data/corpus/open_source_manifest.jsonl" }] },
+    { "id": "benchmark", "type": "backend", "label": "Evaluation Runner", "sublabel": "Dev-only calibration + held-out test", "pos": [755, 285], "size": [185, 64], "sources": [{ "path": "src/evidence_rag_bench/evaluation/runner.py" }] },
+    { "id": "reports", "type": "database", "label": "JSON Reports", "sublabel": "Metrics, traces, provenance", "pos": [1010, 285], "size": [160, 64], "sources": [{ "path": "src/evidence_rag_bench/evaluation/runner.py" }] }
+  ],
+  "connections": [
+    { "id": "ask", "from": "browser", "to": "api", "label": "POST /v1/ask", "variant": "emphasis" },
+    { "id": "answer", "from": "api", "to": "grounding", "label": "answer or abstain", "variant": "security", "labelDy": 56 },
+    { "id": "retrieve", "from": "grounding", "to": "retriever", "label": "top-k evidence", "fromSide": "top", "toSide": "bottom" },
+    { "id": "index", "from": "corpus", "to": "retriever", "label": "deterministic chunks", "labelDy": 56 },
+    { "id": "rerank", "from": "retriever", "to": "reranker", "label": "optional candidates", "variant": "dashed", "labelDy": -52 },
+    { "id": "evaluate", "from": "retriever", "to": "benchmark", "label": "retrieval traces", "fromSide": "right", "toSide": "top" },
+    { "id": "write", "from": "benchmark", "to": "reports", "label": "provenance-rich JSON", "labelDy": 56 }
+  ],
+  "cards": [
+    { "dot": "emerald", "title": "Trust boundary", "items": ["Every returned citation must belong to returned evidence", "Low confidence returns an explicit abstention"] },
+    { "dot": "cyan", "title": "Reproducibility", "items": ["Manifest hashes and stable chunk IDs", "Development-only threshold selection"] },
+    { "dot": "violet", "title": "Model discipline", "items": ["Lexical default runs without a key or GPU", "CrossEncoder is measured, optional, and not called an entailment verifier"] }
+  ]
+}

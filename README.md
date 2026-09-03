@@ -2,16 +2,52 @@
 
 An evaluation-first, evidence-grounded RAG reference implementation. It validates corpus provenance, compares BM25/TF-IDF/RRF-hybrid retrieval, checks citation IDs against returned evidence, and abstains when evidence is insufficient.
 
+## Why this is useful
+
+- **Reproducible evidence:** 15 license-attributed source documents are hash-locked before deterministic chunking.
+- **Measured retrieval:** a held-out 25-case protocol (21 evidence-labelled cases) compares lexical, hybrid, and optional local semantic ranking.
+- **Grounded behavior:** every citation is checked against the evidence returned to the caller; low-confidence requests return a structured abstention.
+- **Inspectable delivery:** reports retain the configuration, manifest hash, Git revision, metrics, latency, and per-case traces.
+
+On the current held-out test split at `k=3`, RRF hybrid reaches **0.90 Recall@3** and **0.73 nDCG@3**. The optional local CrossEncoder reaches **0.74 MRR@3** and **0.77 nDCG@3**; it improves ranking quality but is deliberately documented as a relevance model, not an entailment verifier. See the [full protocol and results](docs/benchmark-results.md).
+
+## Architecture
+
+[Open the interactive architecture](docs/architecture/evidence-rag-bench-architecture.html) for the request, retrieval, grounding, and evaluation paths. The checked-in specification lives beside it in [JSON](docs/architecture/evidence-rag-bench.architecture.json).
+
+```text
+Evidence Viewer -> FastAPI -> Grounding Guardrail -> Local Retrieval -> Versioned Corpus
+                                              \-> Evaluation Runner -> Provenance-rich JSON reports
+                                     (optional) \-> local CrossEncoder re-ranker
+```
+
 ## Run locally
 
 ```bash
 uv sync --python 3.12
 uv run pytest -v
-uv run python -m evidence_rag_bench.evaluation.runner --split dev --k 3
+uv run python -m evidence_rag_bench.evaluation.runner --split dev --k 3 --retriever hybrid --manifest open_source_manifest.jsonl --cases open_source_dev.jsonl
 uv run uvicorn evidence_rag_bench.api.app:create_app --factory --port 8000
 ```
 
 Open `http://127.0.0.1:8000/`. The demo provides either evidence-bound citations or an explicit abstention; no API key or GPU is required.
+
+To reproduce the optional semantic re-ranking experiment, install its extra and select the retriever explicitly:
+
+```bash
+uv sync --extra semantic --python 3.12
+uv run --extra semantic python -m evidence_rag_bench.evaluation.runner --split test --retriever semantic-rerank --k 3 --manifest open_source_manifest.jsonl --cases open_source_test.jsonl
+```
+
+## API example
+
+```bash
+curl -X POST http://127.0.0.1:8000/v1/ask \
+  -H "content-type: application/json" \
+  -d "{\"question\": \"How can FAISS implement cosine similarity?\", \"top_k\": 3}"
+```
+
+Responses expose the decision (`answer` or `abstain`), a deterministic answer string, confidence, and chunk-level citations. Citation IDs in an `answer` response always refer to the returned evidence; an abstention never invents a citation.
 
 ## What is evaluated
 

@@ -31,7 +31,7 @@ The initial CPU experiment (15-document corpus, 25 frozen held-out cases,
 candidate depth 10) improved Hybrid MRR@3 from 0.667 to 0.738 and nDCG@3 from
 0.728 to 0.769, while Recall@3 fell from 0.905 to 0.857. With a
 development-selected threshold, false-answer rate fell from 0.75 to 0.00 and
-abstention recall rose from 0.25 to 1.00; p50 latency rose to 394ms. Full
+abstention recall rose from 0.25 to 1.00; p50 latency rose to about 400ms. Full
 measurements and caveats are in [benchmark results](benchmark-results.md).
 
 Hybrid remains the default deterministic retriever because BM25 still wins

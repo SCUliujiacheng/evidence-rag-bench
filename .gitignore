@@ -4,5 +4,6 @@ __pycache__/
 .ruff_cache/
 .env
 artifacts/
+docs/architecture/*.visual-check.*
+data/corpus/open_source/sklearn-contributing.rst
 *.py[cod]
-

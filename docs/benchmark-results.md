@@ -59,7 +59,7 @@ The optional CrossEncoder run used only the development JSONL to select a
 threshold of `2.463407`. On the held-out set it recorded citation precision/
 recall against gold 0.68/0.62, abstention precision 0.67, abstention recall
 1.00, false-answer rate 0.00, false-abstain rate 0.10, citation-valid rate
-1.00, p50 latency 394ms, and p95 latency 718ms. Here
+1.00, p50 latency about 400ms, and p95 latency about 690ms. Here
 `false-answer rate` means an answer was returned for a non-answerable case; it
 does **not** establish that every answer to an answerable case is entailed by
 its citation. The latter remains an explicit future semantic-support
