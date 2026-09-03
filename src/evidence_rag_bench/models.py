@@ -38,4 +38,4 @@ class RetrievedChunk(Chunk):
 
     score: float
     relevance_score: float | None = None
-    stage: Literal["bm25", "tfidf", "hybrid"] = "bm25"
+    stage: Literal["bm25", "tfidf", "hybrid", "rerank"] = "bm25"
