@@ -12,7 +12,7 @@ def test_health_reports_ready_client() -> None:
 
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
-    assert response.json()["corpus_document_count"] == 6
+    assert response.json()["corpus_document_count"] == 10
     assert response.json()["retriever"] == "hybrid"
     assert response.json()["abstention_threshold"] > 0
 
