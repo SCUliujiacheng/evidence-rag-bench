@@ -159,3 +159,50 @@ def test_run_grounded_split_writes_an_end_to_end_report() -> None:
 
     assert report_path.is_file()
     assert "citation_valid_rate" in report.metrics
+
+
+def test_run_grounded_split_records_threshold_calibrated_from_development_cases(
+    tmp_path: Path,
+) -> None:
+    corpus_dir = tmp_path / "data" / "corpus"
+    eval_dir = tmp_path / "data" / "eval"
+    corpus_dir.mkdir(parents=True)
+    eval_dir.mkdir(parents=True)
+    text_path = corpus_dir / "source.txt"
+    text_path.write_text("A vector index supports similarity search.", encoding="utf-8")
+    manifest = {
+        "doc_id": "source",
+        "title": "Source",
+        "source_url": "https://example.org/source.txt",
+        "license": "MIT",
+        "retrieved_at": "2026-09-01",
+        "text_path": "data/corpus/source.txt",
+        "sha256": hashlib.sha256(text_path.read_bytes()).hexdigest(),
+        "scope_note": "fixture",
+    }
+    (corpus_dir / "custom.jsonl").write_text(json.dumps(manifest), encoding="utf-8")
+    dev_case = {
+        "case_id": "dev-001",
+        "split": "dev",
+        "question": "What does a vector index support?",
+        "answerability": "answerable",
+        "gold_chunk_ids": ["source:0000"],
+        "reference_answer": "similarity search",
+        "notes": "fixture",
+    }
+    test_case = {**dev_case, "case_id": "test-001", "split": "test"}
+    (eval_dir / "custom_dev.jsonl").write_text(json.dumps(dev_case), encoding="utf-8")
+    (eval_dir / "custom_test.jsonl").write_text(json.dumps(test_case), encoding="utf-8")
+
+    report, _ = run_grounded_split(
+        tmp_path,
+        "test",
+        top_k=1,
+        retriever_name="hybrid",
+        manifest_filename="custom.jsonl",
+        case_filename="custom_test.jsonl",
+        calibration_case_filename="custom_dev.jsonl",
+    )
+
+    assert report.metadata["threshold_source"] == "custom_dev.jsonl"
+    assert float(report.metadata["abstention_threshold"]) > 0.0

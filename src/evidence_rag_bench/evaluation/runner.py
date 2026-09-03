@@ -15,6 +15,7 @@ from evidence_rag_bench.corpus.manifest import load_manifest, validate_manifest
 from evidence_rag_bench.evaluation.cases import EvaluationCase, load_cases
 from evidence_rag_bench.evaluation.grounding_metrics import abstention_metrics
 from evidence_rag_bench.evaluation.metrics import retrieval_metrics
+from evidence_rag_bench.grounding.calibration import ScoredCase, select_threshold
 from evidence_rag_bench.grounding.service import AskResult, answer_question
 from evidence_rag_bench.models import Chunk
 from evidence_rag_bench.retrieval.bm25 import BM25Retriever
@@ -60,6 +61,7 @@ class GroundedBenchmarkReport(BaseModel):
 
     metrics: dict[str, float]
     case_results: list[GroundedCaseResult]
+    metadata: dict[str, str]
 
 
 def run_retrieval_benchmark(
@@ -90,6 +92,7 @@ def run_grounded_benchmark(
     cases: list[EvaluationCase],
     top_k: int,
     threshold: float,
+    metadata: dict[str, str] | None = None,
 ) -> GroundedBenchmarkReport:
     """Run answer/abstain behavior and measure citation validity and latency."""
 
@@ -123,6 +126,7 @@ def run_grounded_benchmark(
             "latency_p95_ms": sorted_latencies[percentile_index],
         },
         case_results=case_results,
+        metadata=metadata or {},
     )
 
 
@@ -201,7 +205,8 @@ def run_grounded_split(
     retriever_name: str = "hybrid",
     manifest_filename: str = "manifest.jsonl",
     case_filename: str | None = None,
-    threshold: float = 0.0,
+    threshold: float | None = None,
+    calibration_case_filename: str | None = None,
 ) -> tuple[GroundedBenchmarkReport, Path]:
     """Run end-to-end answer/abstain evaluation and persist a JSON report."""
 
@@ -215,8 +220,38 @@ def run_grounded_split(
     cases = [case for case in load_cases(cases_path) if case.split == split]
     if not cases:
         raise ValueError(f"no {split} cases found")
+    retriever = build_retriever(retriever_name, chunks)
+    calibration_path = (
+        settings.eval_dir / calibration_case_filename if calibration_case_filename else None
+    )
+    if threshold is None and calibration_path is not None:
+        calibration_cases = [case for case in load_cases(calibration_path) if case.split == "dev"]
+        if not calibration_cases:
+            raise ValueError("no dev cases available for threshold calibration")
+        scored_cases = []
+        for case in calibration_cases:
+            results = retriever.search(case.question, top_k)
+            score = results[0].relevance_score if results else 0.0
+            scored_cases.append(
+                ScoredCase(score=score or 0.0, answerable=case.answerability == "answerable")
+            )
+        threshold = select_threshold(scored_cases)
+    effective_threshold = threshold if threshold is not None else 0.0
     report = run_grounded_benchmark(
-        build_retriever(retriever_name, chunks), cases, top_k=top_k, threshold=threshold
+        retriever,
+        cases,
+        top_k=top_k,
+        threshold=effective_threshold,
+        metadata={
+            "split": split,
+            "retriever": retriever_name,
+            "manifest_filename": manifest_filename,
+            "case_filename": cases_path.name,
+            "abstention_threshold": str(effective_threshold),
+            "threshold_source": calibration_path.name
+            if calibration_path
+            else "explicit_or_default",
+        },
     )
     report_dir = settings.artifacts_dir / "reports"
     report_dir.mkdir(parents=True, exist_ok=True)
@@ -235,6 +270,15 @@ def main() -> None:
     parser.add_argument("--retriever", choices=("bm25", "tfidf", "hybrid"), default="bm25")
     parser.add_argument("--manifest", default="manifest.jsonl")
     parser.add_argument("--cases")
+    parser.add_argument(
+        "--calibration-cases",
+        help="development JSONL used to choose the grounded abstention threshold",
+    )
+    parser.add_argument(
+        "--threshold",
+        type=float,
+        help="explicit grounded abstention threshold; overrides calibration",
+    )
     parser.add_argument("--mode", choices=("retrieval", "grounded"), default="retrieval")
     arguments = parser.parse_args()
     if arguments.mode == "grounded":
@@ -245,6 +289,8 @@ def main() -> None:
             arguments.retriever,
             arguments.manifest,
             arguments.cases,
+            arguments.threshold,
+            arguments.calibration_cases,
         )
     else:
         _, report_path = run_split(

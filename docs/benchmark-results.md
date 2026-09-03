@@ -6,7 +6,7 @@ The benchmark uses six hash-locked open-source technical documents from the
 FAISS (MIT), scikit-learn (BSD-3), and LangChain (MIT) repositories. The
 development and held-out test sets contain twelve cases each; nine cases per
 split have evidence labels and three exercise ambiguity or out-of-corpus
-behavior. Metrics below were generated on 2026-09-01 with the default 80-word
+behavior. Metrics below were generated on 2026-09-04 with the default 80-word
 chunker and `k=3`.
 
 ## Held-out retrieval results
@@ -36,16 +36,17 @@ superiority.
 
 ## End-to-end abstention check
 
-The API calibrates its relevance threshold only from the development split
-(`0.184` in this run). When that frozen threshold is applied to the held-out
-set, citation validity is 1.00 but abstention precision/recall are 0.25/0.50;
-the false-answer and false-abstain rates are both 0.50. In particular,
-`os-test-007` contains plausible LangChain vocabulary but asks for an
-unsupported recommendation, while several concise FAISS questions fall below
-the lexical relevance threshold. This is an intentional recorded limitation:
-ranking confidence alone is not a semantic-support verifier. The next
-iteration needs a separately evaluated entailment or structured LLM judge,
-without allowing that judge to inspect held-out labels during calibration.
+The end-to-end runner now selects its relevance threshold only from the named
+development JSONL and writes both the threshold and its source into the report.
+For the Hybrid run, the frozen development threshold was `0.120188`; on the
+held-out set it produced citation validity 1.00, abstention precision 0.50,
+abstention recall 0.33, false-answer rate 0.67, and false-abstain rate 0.11.
+Those numbers are deliberately not presented as a success: `os-test-007`
+contains plausible LangChain vocabulary but asks for an unsupported
+recommendation, so lexical relevance still allows an incorrect answer. This is
+the project’s recorded next problem: a valid citation ID is not semantic
+support. Any semantic verifier must be calibrated only on development labels
+and reported on the held-out split without re-tuning.
 
 ## Reproduce
 
@@ -53,4 +54,5 @@ without allowing that judge to inspect held-out labels during calibration.
 uv run python -m evidence_rag_bench.evaluation.runner --split test --k 3 --retriever bm25 --manifest open_source_manifest.jsonl --cases open_source_test.jsonl
 uv run python -m evidence_rag_bench.evaluation.runner --split test --k 3 --retriever tfidf --manifest open_source_manifest.jsonl --cases open_source_test.jsonl
 uv run python -m evidence_rag_bench.evaluation.runner --split test --k 3 --retriever hybrid --manifest open_source_manifest.jsonl --cases open_source_test.jsonl
+uv run python -m evidence_rag_bench.evaluation.runner --split test --k 3 --retriever hybrid --manifest open_source_manifest.jsonl --cases open_source_test.jsonl --mode grounded --calibration-cases open_source_dev.jsonl
 ```
