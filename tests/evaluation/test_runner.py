@@ -163,6 +163,9 @@ def test_grounded_benchmark_reports_abstention_metrics() -> None:
 
     assert report.metrics["abstention_recall"] == 1.0
     assert report.metrics["false_abstain_rate"] == 0.0
+    assert report.metrics["citation_precision_against_gold"] == 1.0
+    assert report.metrics["citation_recall_against_gold"] == 1.0
+    assert report.metrics["unsupported_citation_count"] == 0.0
 
 
 def test_run_grounded_split_writes_an_end_to_end_report() -> None:

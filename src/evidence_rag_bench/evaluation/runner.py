@@ -123,12 +123,26 @@ def run_grounded_benchmark(
         if result.status == "answer"
     )
     answer_count = sum(result.status == "answer" for result in case_results)
+    cases_by_id = {case.case_id: case for case in cases}
+    citation_total = sum(len(result.citation_ids) for result in case_results)
+    supported_citation_count = sum(
+        len(set(result.citation_ids) & set(cases_by_id[result.case_id].gold_chunk_ids))
+        for result in case_results
+    )
+    gold_total = sum(len(case.gold_chunk_ids) for case in cases)
     sorted_latencies = sorted(result.latency_ms for result in case_results)
     percentile_index = max(0, round(0.95 * len(sorted_latencies)) - 1)
     return GroundedBenchmarkReport(
         metrics={
             **abstention_metrics(statuses, cases),
             "citation_valid_rate": citation_valid_count / answer_count if answer_count else 0.0,
+            "citation_precision_against_gold": (
+                supported_citation_count / citation_total if citation_total else 0.0
+            ),
+            "citation_recall_against_gold": (
+                supported_citation_count / gold_total if gold_total else 0.0
+            ),
+            "unsupported_citation_count": float(citation_total - supported_citation_count),
             "latency_p50_ms": sorted_latencies[len(sorted_latencies) // 2],
             "latency_p95_ms": sorted_latencies[percentile_index],
         },

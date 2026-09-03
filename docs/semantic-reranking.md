@@ -27,12 +27,12 @@ held-out labels or tune on them.
 
 ## Acceptance gate
 
-The initial CPU experiment (ten-doc corpus, 16 frozen held-out cases,
-candidate depth 10) improved Hybrid MRR@3 from 0.603 to 0.654 and nDCG@3 from
-0.646 to 0.684, with unchanged Recall@3 (0.769). With a development-selected
-threshold, false-answer rate fell from 0.67 to 0.00 and abstention recall rose
-from 0.33 to 1.00; p50 latency rose to 377ms. Full measurements and caveats
-are in [benchmark results](benchmark-results.md).
+The initial CPU experiment (15-document corpus, 25 frozen held-out cases,
+candidate depth 10) improved Hybrid MRR@3 from 0.667 to 0.738 and nDCG@3 from
+0.728 to 0.769, while Recall@3 fell from 0.905 to 0.857. With a
+development-selected threshold, false-answer rate fell from 0.75 to 0.00 and
+abstention recall rose from 0.25 to 1.00; p50 latency rose to 394ms. Full
+measurements and caveats are in [benchmark results](benchmark-results.md).
 
 Hybrid remains the default deterministic retriever because BM25 still wins
 retrieval coverage, the CrossEncoder adds CPU latency, and a relevance model is
