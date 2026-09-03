@@ -190,7 +190,12 @@ def test_run_grounded_split_records_threshold_calibrated_from_development_cases(
         "reference_answer": "similarity search",
         "notes": "fixture",
     }
-    test_case = {**dev_case, "case_id": "test-001", "split": "test"}
+    test_case = {
+        **dev_case,
+        "case_id": "test-001",
+        "split": "test",
+        "question": "Does a vector index enable similarity search?",
+    }
     (eval_dir / "custom_dev.jsonl").write_text(json.dumps(dev_case), encoding="utf-8")
     (eval_dir / "custom_test.jsonl").write_text(json.dumps(test_case), encoding="utf-8")
 

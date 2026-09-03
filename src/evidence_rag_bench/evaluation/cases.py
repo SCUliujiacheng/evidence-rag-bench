@@ -21,6 +21,31 @@ class EvaluationCase(BaseModel):
     notes: str = Field(min_length=1)
 
 
+def validate_case_protocol(cases: Iterable[EvaluationCase]) -> None:
+    """Reject labels that would invalidate evidence or split-level evaluation."""
+
+    seen_case_ids: set[str] = set()
+    question_splits: dict[str, str] = {}
+    for case in cases:
+        if case.case_id in seen_case_ids:
+            raise ValueError(f"duplicate case_id: {case.case_id}")
+        seen_case_ids.add(case.case_id)
+        normalized_question = " ".join(case.question.lower().split())
+        existing_split = question_splits.get(normalized_question)
+        if existing_split is not None and existing_split != case.split:
+            raise ValueError(f"question reused across splits: {case.question}")
+        if existing_split is not None:
+            raise ValueError(f"duplicate question within split: {case.question}")
+        question_splits[normalized_question] = case.split
+        if case.answerability == "answerable":
+            if not case.gold_chunk_ids:
+                raise ValueError("answerable cases require gold_chunk_ids")
+            if not case.reference_answer:
+                raise ValueError("answerable cases require reference_answer")
+        elif case.gold_chunk_ids or case.reference_answer:
+            raise ValueError("non-answerable cases cannot include answer evidence")
+
+
 def load_cases(path: Path) -> list[EvaluationCase]:
     """Load non-blank JSONL evaluation case records."""
 
@@ -31,6 +56,7 @@ def load_cases(path: Path) -> list[EvaluationCase]:
     ]
     if not cases:
         raise ValueError("evaluation file contains no cases")
+    validate_case_protocol(cases)
     return cases
 
 

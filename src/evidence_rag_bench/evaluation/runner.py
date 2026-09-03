@@ -12,7 +12,7 @@ from pydantic import BaseModel, ConfigDict
 from evidence_rag_bench.config import get_settings
 from evidence_rag_bench.corpus.chunking import chunk_document
 from evidence_rag_bench.corpus.manifest import load_manifest, validate_manifest
-from evidence_rag_bench.evaluation.cases import EvaluationCase, load_cases
+from evidence_rag_bench.evaluation.cases import EvaluationCase, load_cases, validate_case_protocol
 from evidence_rag_bench.evaluation.grounding_metrics import abstention_metrics
 from evidence_rag_bench.evaluation.metrics import retrieval_metrics
 from evidence_rag_bench.grounding.calibration import ScoredCase, select_threshold
@@ -228,6 +228,7 @@ def run_grounded_split(
         calibration_cases = [case for case in load_cases(calibration_path) if case.split == "dev"]
         if not calibration_cases:
             raise ValueError("no dev cases available for threshold calibration")
+        validate_case_protocol([*cases, *calibration_cases])
         scored_cases = []
         for case in calibration_cases:
             results = retriever.search(case.question, top_k)
