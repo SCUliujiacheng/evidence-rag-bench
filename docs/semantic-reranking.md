@@ -10,8 +10,8 @@ The initial experiment target is
 [`cross-encoder/ms-marco-MiniLM-L6-v2`](https://huggingface.co/cross-encoder/ms-marco-MiniLM-L6-v2): a 22.7M-parameter,
 Apache-2.0 licensed passage-ranking CrossEncoder. The model card documents its
 MS MARCO training data and `CrossEncoder` inference interface. It is a
-semantic relevance re-ranker, **not** a factual-entailment verifier; the
-project must not claim that it proves an answer is supported.
+semantic relevance re-ranker. It does not verify entailment or establish that
+an answer is supported.
 
 ## Run locally
 

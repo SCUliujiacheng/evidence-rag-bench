@@ -245,7 +245,8 @@ def run_grounded_split(
     """Run end-to-end answer/abstain evaluation and persist a JSON report."""
 
     settings = get_settings(project_root)
-    records = load_manifest(settings.corpus_dir / manifest_filename)
+    manifest_path = settings.corpus_dir / manifest_filename
+    records = load_manifest(manifest_path)
     validate_manifest(records, settings.project_root)
     chunks = [
         chunk for record in records for chunk in chunk_document(record, settings.project_root)
@@ -278,10 +279,14 @@ def run_grounded_split(
         top_k=top_k,
         threshold=effective_threshold,
         metadata={
+            "corpus_manifest_sha256": hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
+            "git_revision": git_revision(settings.project_root),
+            "created_at": datetime.now(UTC).isoformat(),
             "split": split,
             "retriever": retriever_name,
             "manifest_filename": manifest_filename,
             "case_filename": cases_path.name,
+            "top_k": str(top_k),
             "abstention_threshold": str(effective_threshold),
             "threshold_source": calibration_path.name
             if calibration_path

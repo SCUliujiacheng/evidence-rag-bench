@@ -5,6 +5,10 @@ const answer = document.querySelector("#answer");
 const reason = document.querySelector("#reason");
 const latency = document.querySelector("#latency");
 const evidence = document.querySelector("#evidence");
+const reasonLabels = {
+  insufficient_evidence: "Not enough evidence was retrieved",
+  citation_validation_failed: "The citation check failed",
+};
 
 function element(tag, text) {
   const node = document.createElement(tag);
@@ -32,7 +36,9 @@ form.addEventListener("submit", async (event) => {
   }
   status.textContent = body.status === "answer" ? "ANSWER — SOURCES BELOW" : "NO ANSWER FROM THIS CORPUS";
   answer.textContent = body.answer;
-  reason.textContent = body.reason ? `Why: ${body.reason}` : "";
+  reason.textContent = body.reason
+    ? `Reason: ${reasonLabels[body.reason] || body.reason}`
+    : "";
   latency.textContent = `Search time: ${body.latency_ms.toFixed(1)} ms`;
   body.evidence.forEach((item) => {
     const card = document.createElement("article");

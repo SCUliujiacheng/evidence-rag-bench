@@ -35,7 +35,7 @@ higher latency.
 
 - `os-test-006`: the question uses "provide" while the relevant LangSmith text
   uses "support". Both sparse baselines and RRF miss `langchain-readme:0007`,
-  motivating a true embedding retriever in the next milestone.
+  suggesting an embedding retriever as the next experiment.
 - `os-test-007` and `os-test-008` intentionally have no gold evidence. They
   are retained for abstention evaluation and are excluded from retrieval-score
   denominators.

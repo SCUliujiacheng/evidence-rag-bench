@@ -81,3 +81,14 @@ def test_homepage_sets_a_plain_expectation_for_the_evidence_viewer() -> None:
     assert response.status_code == 200
     assert "Search the fixed corpus. If the evidence is thin, the demo says so." in response.text
     assert "Find supporting passages" in response.text
+    assert "How can FAISS implement cosine similarity?" in response.text
+
+
+def test_demo_explains_abstention_reasons_in_plain_english() -> None:
+    project_root = Path(__file__).parents[2]
+
+    response = TestClient(create_app(project_root)).get("/app.js")
+
+    assert response.status_code == 200
+    assert 'insufficient_evidence: "Not enough evidence was retrieved"' in response.text
+    assert "Reason:" in response.text
