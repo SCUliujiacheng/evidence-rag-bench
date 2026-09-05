@@ -4,9 +4,11 @@
 
 **A compact RAG system that treats evidence—not fluent text—as the unit of trust.**
 
-[![CI](https://github.com/SCUliujiacheng/evidence-rag-bench/actions/workflows/ci.yml/badge.svg)](https://github.com/SCUliujiacheng/evidence-rag-bench/actions/workflows/ci.yml)
-![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
-[![MIT License](https://img.shields.io/badge/License-MIT-0B7285.svg)](LICENSE)
+<p>
+  <a href="https://github.com/SCUliujiacheng/evidence-rag-bench/actions/workflows/ci.yml"><img src="https://github.com/SCUliujiacheng/evidence-rag-bench/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <img src="https://img.shields.io/badge/Python-3.12-3776AB?logo=python&amp;logoColor=white" alt="Python 3.12">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-0B7285.svg" alt="MIT License"></a>
+</p>
 
 [Why I built this](#why-i-built-this) · [Design tour](#three-minute-design-tour) · [Architecture](#architecture) · [Run locally](#run-locally)
 
@@ -31,7 +33,7 @@ I built Evidence RAG Bench to make that boundary concrete. Inputs are versioned,
 | Design concern | Inspectable evidence |
 | --- | --- |
 | Reproducible inputs | 15 license-attributed source documents are hash-locked before deterministic chunking; see the [corpus manifest](data/corpus/open_source_manifest.jsonl) and [validation code](src/evidence_rag_bench/corpus/manifest.py). |
-| Measured retrieval | A versioned 25-case protocol (21 evidence-labelled cases) compares lexical, hybrid, and optional local semantic ranking; see the [benchmark results](docs/benchmark-results.md). |
+| Measured retrieval | A versioned protocol with 25 development and 25 test cases (21 evidence-labelled cases per split) compares lexical, hybrid, and optional local semantic ranking; see the [benchmark results](docs/benchmark-results.md). |
 | Grounded behavior | Every citation must belong to the returned evidence; low-confidence requests produce a structured abstention in the [grounding service](src/evidence_rag_bench/grounding/service.py). |
 | Inspectable delivery | Reports retain configuration, manifest hash, Git revision, metrics, latency, and per-case traces through the [evaluation runner](src/evidence_rag_bench/evaluation/runner.py). |
 
@@ -56,6 +58,25 @@ flowchart LR
 
 The default hybrid path needs Python 3.12 and [`uv`](https://docs.astral.sh/uv/), but no API key or GPU:
 
+**PowerShell**
+
+```powershell
+uv sync --python 3.12
+uv run pytest -v
+uv run python -m evidence_rag_bench.evaluation.runner `
+  --split dev `
+  --k 3 `
+  --retriever hybrid `
+  --manifest open_source_manifest.jsonl `
+  --cases open_source_dev.jsonl
+uv run uvicorn evidence_rag_bench.api.app:create_app `
+  --factory `
+  --port 8000
+```
+
+<details>
+<summary>Bash / Git Bash equivalent</summary>
+
 ```bash
 uv sync --python 3.12
 uv run pytest -v
@@ -70,9 +91,36 @@ uv run uvicorn evidence_rag_bench.api.app:create_app \
   --port 8000
 ```
 
+</details>
+
 Open `http://127.0.0.1:8000/`. The viewer returns either evidence-bound citations or an explicit abstention.
 
+<details>
+<summary>An existing Windows checkout reports a corpus checksum mismatch</summary>
+
+The byte-preservation rule applies automatically to fresh checkouts. If the repository was checked out before that rule existed, first make sure `git status --short -- data/corpus` prints nothing, then refresh only the tracked corpus files once:
+
+```text
+git rm -r --cached -- data/corpus
+git restore --source=HEAD --staged --worktree -- data/corpus
+```
+
+</details>
+
 To reproduce the optional semantic re-ranking experiment:
+
+```powershell
+uv sync --extra semantic --python 3.12
+uv run --extra semantic python -m evidence_rag_bench.evaluation.runner `
+  --split test `
+  --retriever semantic-rerank `
+  --k 3 `
+  --manifest open_source_manifest.jsonl `
+  --cases open_source_test.jsonl
+```
+
+<details>
+<summary>Bash / Git Bash equivalent</summary>
 
 ```bash
 uv sync --extra semantic --python 3.12
@@ -84,13 +132,33 @@ uv run --extra semantic python -m evidence_rag_bench.evaluation.runner \
   --cases open_source_test.jsonl
 ```
 
+</details>
+
 ## API example
+
+```powershell
+$body = @{
+  question = "How can FAISS implement cosine similarity?"
+  top_k = 3
+} | ConvertTo-Json
+
+Invoke-RestMethod `
+  -Method Post `
+  -Uri "http://127.0.0.1:8000/v1/ask" `
+  -ContentType "application/json" `
+  -Body $body
+```
+
+<details>
+<summary>Bash / Git Bash equivalent</summary>
 
 ```bash
 curl -X POST http://127.0.0.1:8000/v1/ask \
   -H "content-type: application/json" \
   -d '{"question":"How can FAISS implement cosine similarity?","top_k":3}'
 ```
+
+</details>
 
 Responses expose the decision (`answer` or `abstain`), a deterministic answer string, confidence, and chunk-level citations. Citation IDs in an `answer` response always refer to returned evidence; an abstention never invents a citation.
 
