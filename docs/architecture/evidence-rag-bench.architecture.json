@@ -2,41 +2,48 @@
   "schema_version": 1,
   "diagram_type": "architecture",
   "meta": {
-    "title": "Evidence RAG Bench Architecture",
+    "title": "Evidence RAG Bench architecture",
+    "locale": "en",
     "output": "evidence-rag-bench-architecture.html",
     "quality_profile": "showcase",
     "repository": {
       "url": "https://github.com/SCUliujiacheng/evidence-rag-bench",
-      "revision": "7affaceaec01ef79643b747feb7544387a3c5146"
+      "revision": "473562baf519410feab69feec84dbed4989eee54"
     },
     "views": [
-      { "id": "request", "label": "Evidence-bound answer path", "focus": ["browser", "api", "retriever", "grounding"], "note": "A question receives evidence or an explicit abstention." },
-      { "id": "evaluation", "label": "Reproducible evaluation", "focus": ["corpus", "retriever", "benchmark", "reports"], "note": "Hash-locked inputs produce reportable benchmark artifacts." },
-      { "id": "semantic", "label": "Optional semantic stage", "focus": ["retriever", "reranker", "benchmark"], "note": "The CrossEncoder re-ranks fixed candidates but remains opt-in." }
+      { "id": "request", "label": "Inspect one request", "focus": ["browser", "api", "grounding", "retriever"], "note": "Follow a question to returned evidence or an explicit abstention." },
+      { "id": "profiles", "label": "Switch corpus profiles", "focus": ["corpora", "profile", "preprocess", "retriever"], "note": "English and Chinese keep separate sources, chunks, tokenizers, cases, and thresholds." },
+      { "id": "evaluation", "label": "Reproduce a benchmark", "focus": ["retriever", "benchmark", "reports"], "note": "A named profile produces metrics and per-case traces with input hashes." },
+      { "id": "semantic", "label": "English-only reranking", "focus": ["retriever", "reranker", "benchmark"], "note": "The optional MiniLM stage accepts en-v1 and rejects zh-v1." }
     ]
   },
   "components": [
-    { "id": "browser", "type": "frontend", "label": "Evidence Viewer", "sublabel": "Static browser UI", "pos": [40, 285], "size": [145, 64], "sources": [{ "path": "src/evidence_rag_bench/ui/index.html" }] },
-    { "id": "api", "type": "backend", "label": "FastAPI Service", "sublabel": "/v1/ask + evaluation API", "pos": [265, 285], "size": [165, 64], "sources": [{ "path": "src/evidence_rag_bench/api/app.py" }] },
-    { "id": "grounding", "type": "security", "label": "Grounding Guardrail", "sublabel": "Citation validation + abstention", "pos": [515, 285], "size": [175, 64], "sources": [{ "path": "src/evidence_rag_bench/grounding/service.py" }] },
-    { "id": "retriever", "type": "backend", "label": "Local Retrieval", "sublabel": "BM25 / TF-IDF / RRF Hybrid", "pos": [515, 120], "size": [175, 64], "sources": [{ "path": "src/evidence_rag_bench/retrieval/hybrid.py" }] },
-    { "id": "reranker", "type": "cloud", "label": "Optional CrossEncoder", "sublabel": "Local MiniLM semantic re-rank", "pos": [755, 120], "size": [185, 64], "sources": [{ "path": "src/evidence_rag_bench/retrieval/rerank.py" }] },
-    { "id": "corpus", "type": "database", "label": "Versioned Corpus", "sublabel": "15 licensed, hash-locked sources", "pos": [265, 120], "size": [175, 64], "sources": [{ "path": "data/corpus/open_source_manifest.jsonl" }] },
-    { "id": "benchmark", "type": "backend", "label": "Evaluation Runner", "sublabel": "Dev tuning + fixed test", "pos": [755, 285], "size": [185, 64], "sources": [{ "path": "src/evidence_rag_bench/evaluation/runner.py" }] },
-    { "id": "reports", "type": "database", "label": "JSON Reports", "sublabel": "Metrics, traces, provenance", "pos": [1010, 285], "size": [160, 64], "sources": [{ "path": "src/evidence_rag_bench/evaluation/runner.py" }] }
+    { "id": "corpora", "type": "database", "label": "Versioned corpora", "sublabel": "15 English + 3 Chinese sources", "pos": [130, 110], "size": [170, 64], "sources": [{ "path": "data/corpus/open_source_manifest.jsonl", "label": "en-v1 manifest" }, { "path": "data/corpus/zh_v1_manifest.jsonl", "label": "zh-v1 manifest" }] },
+    { "id": "profile", "type": "backend", "label": "Profile registry", "sublabel": "en-v1 / zh-v1", "pos": [355, 110], "size": [170, 64], "sources": [{ "path": "src/evidence_rag_bench/profiles.py" }] },
+    { "id": "preprocess", "type": "backend", "label": "Text processing", "sublabel": "word windows / Unicode windows", "pos": [580, 110], "size": [180, 64], "sources": [{ "path": "src/evidence_rag_bench/corpus/chunking.py" }, { "path": "src/evidence_rag_bench/retrieval/bm25.py", "label": "profile tokenizers" }] },
+    { "id": "retriever", "type": "backend", "label": "Local retrieval", "sublabel": "BM25 / TF-IDF / RRF Hybrid", "pos": [805, 110], "size": [180, 64], "sources": [{ "path": "src/evidence_rag_bench/retrieval/hybrid.py" }] },
+    { "id": "reranker", "type": "cloud", "label": "Optional MiniLM", "sublabel": "en-v1 candidates only", "pos": [1030, 110], "size": [180, 64], "sources": [{ "path": "src/evidence_rag_bench/retrieval/rerank.py" }] },
+    { "id": "browser", "type": "frontend", "label": "Evidence viewer", "sublabel": "profile selector + source cards", "pos": [130, 310], "size": [170, 64], "sources": [{ "path": "src/evidence_rag_bench/ui/index.html" }] },
+    { "id": "api", "type": "backend", "label": "FastAPI service", "sublabel": "/v1/ask + evaluation API", "pos": [355, 310], "size": [170, 64], "sources": [{ "path": "src/evidence_rag_bench/api/app.py" }] },
+    { "id": "grounding", "type": "security", "label": "Evidence guard", "sublabel": "citation check + abstention", "pos": [580, 310], "size": [180, 64], "sources": [{ "path": "src/evidence_rag_bench/grounding/service.py" }] },
+    { "id": "benchmark", "type": "backend", "label": "Evaluation runner", "sublabel": "dev calibration + fixed test", "pos": [805, 310], "size": [180, 64], "sources": [{ "path": "src/evidence_rag_bench/evaluation/runner.py" }] },
+    { "id": "reports", "type": "database", "label": "JSON reports", "sublabel": "metrics, traces, input hashes", "pos": [1030, 310], "size": [180, 64], "sources": [{ "path": "src/evidence_rag_bench/evaluation/runner.py" }] }
   ],
   "connections": [
-    { "id": "ask", "from": "browser", "to": "api", "label": "POST /v1/ask", "variant": "emphasis" },
-    { "id": "answer", "from": "api", "to": "grounding", "label": "answer or abstain", "variant": "security", "labelDy": 56 },
-    { "id": "retrieve", "from": "grounding", "to": "retriever", "label": "top-k evidence", "fromSide": "top", "toSide": "bottom" },
-    { "id": "index", "from": "corpus", "to": "retriever", "label": "deterministic chunks", "labelDy": 56 },
-    { "id": "rerank", "from": "retriever", "to": "reranker", "label": "optional candidates", "variant": "dashed", "labelDy": -52 },
-    { "id": "evaluate", "from": "retriever", "to": "benchmark", "label": "retrieval traces", "fromSide": "right", "toSide": "top" },
-    { "id": "write", "from": "benchmark", "to": "reports", "label": "report + run metadata", "labelDy": 56 }
+    { "id": "ask", "from": "browser", "to": "api", "label": "POST /v1/ask", "labelAt": [328, 388], "variant": "emphasis" },
+    { "id": "choose", "from": "api", "to": "profile", "label": "select profile", "fromSide": "top", "toSide": "bottom" },
+    { "id": "check", "from": "api", "to": "grounding", "label": "question + top-k", "labelAt": [553, 388] },
+    { "id": "retrieve", "from": "grounding", "to": "retriever", "label": "rank evidence", "fromSide": "top", "toSide": "bottom", "variant": "security" },
+    { "id": "load", "from": "corpora", "to": "profile", "label": "raw + manifest", "labelAt": [328, 90] },
+    { "id": "prepare", "from": "profile", "to": "preprocess", "label": "chunk + token rules", "labelAt": [553, 90] },
+    { "id": "index", "from": "preprocess", "to": "retriever", "label": "stable chunks", "labelAt": [783, 90] },
+    { "id": "rerank", "from": "retriever", "to": "reranker", "label": "en-v1 only", "labelAt": [1008, 90], "variant": "dashed" },
+    { "id": "evaluate", "from": "retriever", "to": "benchmark", "label": "per-case ranking", "labelAt": [950, 270], "fromSide": "bottom", "toSide": "top" },
+    { "id": "write", "from": "benchmark", "to": "reports", "label": "versioned result", "labelAt": [1008, 388] }
   ],
   "cards": [
-    { "dot": "emerald", "title": "Trust boundary", "items": ["Every returned citation must belong to returned evidence", "Low confidence returns an explicit abstention"] },
-    { "dot": "cyan", "title": "Reproducibility", "items": ["Manifest hashes and stable chunk IDs", "Development-only threshold selection"] },
-    { "dot": "violet", "title": "Model discipline", "items": ["Lexical default runs without a key or GPU", "CrossEncoder is measured, optional, and not called an entailment verifier"] }
+    { "dot": "cyan", "title": "Two profiles, no mixed index", "items": ["en-v1 keeps the original 15-document benchmark", "zh-v1 has its own 3 documents, 9+9 cases, chunks, and threshold"] },
+    { "dot": "emerald", "title": "What gets indexed", "items": ["Raw source files stay hash-locked", "The Milvus contributor-avatar tail is excluded by an explicit marker and a separate indexed-byte hash"] },
+    { "dot": "amber", "title": "What the guard does not prove", "items": ["Citation IDs must belong to returned evidence", "A lexical relevance score is not a semantic sufficiency check"] }
   ]
 }
