@@ -5,7 +5,7 @@ requested_reasoner: GPT-5.6 Sol
 ## Objective
 Choose the smallest credible next architecture step that improves semantic
 support verification and answer/abstain behavior in a public, local-first RAG
-portfolio project without hiding current limitations.
+research project without hiding current limitations.
 
 ## Acceptance
 - A concrete, independently testable design for a semantic support verifier or
@@ -53,5 +53,6 @@ portfolio project without hiding current limitations.
    "citation ID is valid" from "evidence semantically supports the answer"?
 2. How should that verifier be evaluated and integrated without contaminating
    the held-out split or turning the project into an untestable model demo?
-3. What risks or claims should the README avoid for a job-seeking AI graduate?
+3. What risks or claims should the README avoid when presenting this narrow
+   benchmark to technical readers?
 END_CONTEXT_PACKET

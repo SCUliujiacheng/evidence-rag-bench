@@ -43,7 +43,7 @@
 | `data/eval/*.jsonl` | development and held-out benchmark cases |
 | `tests/*` | deterministic unit, integration, and API coverage |
 | `.github/workflows/ci.yml` | lint, formatting, and test automation |
-| `README.md`, `docs/decision-log.md` | recruiter-first explanation, reproducibility, and tradeoffs |
+| `README.md`, `docs/decision-log.md` | reader-first explanation, reproducibility, and tradeoffs |
 
 ### Task 1: Bootstrap the reproducible Python package
 
@@ -413,7 +413,7 @@ git add src/evidence_rag_bench/api src/evidence_rag_bench/ui tests/api
 git commit -m "feat: add evidence RAG API and demo UI"
 ```
 
-### Task 6: Add CI, recruiter-facing documentation, and final verification
+### Task 6: Add CI, public documentation, and final verification
 
 **Files:**
 - Create: `.github/workflows/ci.yml`

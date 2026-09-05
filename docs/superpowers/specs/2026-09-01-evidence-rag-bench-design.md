@@ -2,14 +2,14 @@
 
 ## 1. Purpose
 
-`evidence-rag-bench` is a recruiter-facing reference implementation for
-evidence-grounded retrieval-augmented generation (RAG). It demonstrates more
+`evidence-rag-bench` is a research-oriented reference implementation for
+evidence-grounded retrieval-augmented generation (RAG). It explores more
 than a chat interface: given a fixed, licensed technical corpus, the system
 retrieves evidence, returns answer claims with traceable citations, and
 explicitly abstains when the corpus does not justify an answer.
 
-The repository is designed to show practical Applied AI / ML Engineering
-skills: data provenance, retrieval baselines, evaluation design, reliability
+The repository explores practical Applied AI / ML Engineering concerns:
+data provenance, retrieval baselines, evaluation design, reliability
 guardrails, reproducibility, API delivery, and engineering hygiene.
 
 ## 2. Goals
@@ -212,7 +212,7 @@ as choosing BM25 first, abstention policy design, and corpus scope.
 5. Dense/hybrid retrieval and optional reranking, compared honestly against
    BM25.
 6. Curated public corpus expansion, 50--100 evaluation cases, manual error
-   analysis, screenshots/demo video, and GitHub portfolio polishing.
+   analysis, screenshots/demo video, and public GitHub presentation.
 
 ## 13. Acceptance Criteria for the First Public Release
 
@@ -226,5 +226,5 @@ as choosing BM25 first, abstention policy design, and corpus scope.
   metrics with configuration metadata.
 - Unit/integration/API tests and CI are green; no secrets or unlicensed corpus
   files are committed.
-- The README presents both results and limitations in language a recruiter can
-  validate quickly.
+- The README presents both results and limitations in language a technical
+  reader can validate quickly.
