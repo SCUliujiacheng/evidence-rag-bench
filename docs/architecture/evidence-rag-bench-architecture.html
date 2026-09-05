@@ -5039,7 +5039,7 @@
         <path data-edge-from="corpus" data-edge-to="retriever" data-edge-label="deterministic chunks" data-edge-key="3" data-edge-id="index" data-composition-points="440,152;515,152" d="M 440 152 L 515 152" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         <path data-edge-from="retriever" data-edge-to="reranker" data-edge-label="optional candidates" data-edge-key="4" data-edge-id="rerank" data-composition-points="690,145;755,145" d="M 690 145 L 755 145" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
         <path data-edge-from="retriever" data-edge-to="benchmark" data-edge-label="retrieval traces" data-edge-key="5" data-edge-id="evaluate" data-composition-points="690,159;714,159;714,261;847.5,261;847.5,285" d="M 690 159 L 706 159 Q 714 159 714 167 L 714 253 Q 714 261 722 261 L 839.5 261 Q 847.5 261 847.5 269 L 847.5 285" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="benchmark" data-edge-to="reports" data-edge-label="provenance-rich JSON" data-edge-key="6" data-edge-id="write" data-composition-points="940,317;1010,317" d="M 940 317 L 1010 317" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="benchmark" data-edge-to="reports" data-edge-label="report + run metadata" data-edge-key="6" data-edge-id="write" data-composition-points="940,317;1010,317" d="M 940 317 L 1010 317" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
 
         <!-- Components -->
         <g id="node-browser" data-node-id="browser" data-node-label="Evidence Viewer" tabindex="0" role="button" aria-label="Focus Evidence Viewer, Static browser UI, Architecture component" aria-pressed="false" data-node-kind="frontend" data-node-sublabel="Static browser UI" data-node-context="Architecture component">
@@ -5113,15 +5113,15 @@
         <text data-detail="context" x="352.5" y="166" class="t-muted" font-size="8.6" text-anchor="middle">15 licensed, hash-locked sources</text>
         </g>
 
-        <g id="node-benchmark" data-node-id="benchmark" data-node-label="Evaluation Runner" tabindex="0" role="button" aria-label="Focus Evaluation Runner, Dev-only calibration + held-out test, Architecture component" aria-pressed="false" data-node-kind="backend" data-node-sublabel="Dev-only calibration + held-out test" data-node-context="Architecture component">
-          <title>Evaluation Runner · Dev-only calibration + held-out test · Architecture component</title>
+        <g id="node-benchmark" data-node-id="benchmark" data-node-label="Evaluation Runner" tabindex="0" role="button" aria-label="Focus Evaluation Runner, Dev tuning + fixed test, Architecture component" aria-pressed="false" data-node-kind="backend" data-node-sublabel="Dev tuning + fixed test" data-node-context="Architecture component">
+          <title>Evaluation Runner · Dev tuning + fixed test · Architecture component</title>
           <rect x="755" y="285" width="185" height="64" rx="6" class="c-mask"/>
           <rect x="755" y="285" width="185" height="64" rx="6" class="c-backend" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(761 291) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
           <text data-node-label="" data-detail-anchor="" x="847.5" y="315" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Evaluation Runner</text>
-        <text data-detail="context" x="847.5" y="331" class="t-muted" font-size="8.1" text-anchor="middle">Dev-only calibration + held-out test</text>
+        <text data-detail="context" x="847.5" y="331" class="t-muted" font-size="9" text-anchor="middle">Dev tuning + fixed test</text>
         </g>
 
         <g id="node-reports" data-node-id="reports" data-node-label="JSON Reports" tabindex="0" role="button" aria-label="Focus JSON Reports, Metrics, traces, provenance, Architecture component" aria-pressed="false" data-node-kind="database" data-node-sublabel="Metrics, traces, provenance" data-node-context="Architecture component">
@@ -5161,9 +5161,9 @@
           <rect x="670.6" y="190" width="86.8" height="14" rx="3" class="c-mask"/>
           <text x="714" y="200" class="t-muted" font-size="8" text-anchor="middle">retrieval traces</text>
         </g>
-        <g data-detail="context" data-edge-from="benchmark" data-edge-to="reports" data-edge-label="provenance-rich JSON" data-edge-key="6" data-edge-id="write">
-          <rect x="922" y="353" width="106" height="14" rx="3" class="c-mask"/>
-          <text x="975" y="363" class="t-muted" font-size="8" text-anchor="middle">provenance-rich JSON</text>
+        <g data-detail="context" data-edge-from="benchmark" data-edge-to="reports" data-edge-label="report + run metadata" data-edge-key="6" data-edge-id="write">
+          <rect x="919.6" y="353" width="110.8" height="14" rx="3" class="c-mask"/>
+          <text x="975" y="363" class="t-muted" font-size="8" text-anchor="middle">report + run metadata</text>
         </g>
 
         <!-- Boundary labels (foreground masks keep routes out of titles) -->

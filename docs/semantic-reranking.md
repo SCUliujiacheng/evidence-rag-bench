@@ -22,12 +22,12 @@ uv sync --extra semantic
 `SentenceTransformersCrossEncoder` loads the named model lazily, so CI and the
 baseline demo do not download model weights. Reports record model identity and
 candidate depth alongside the existing lexical configuration. A run may use
-development cases to choose a threshold, but it must not change the frozen
-held-out labels or tune on them.
+development cases to choose a threshold, but it must not change the fixed test
+labels or tune on them.
 
 ## Acceptance gate
 
-The initial CPU experiment (15-document corpus, 25 frozen held-out cases,
+The initial CPU experiment (15-document corpus, 25 fixed test cases,
 candidate depth 10) improved Hybrid MRR@3 from 0.667 to 0.738 and nDCG@3 from
 0.728 to 0.769, while Recall@3 fell from 0.905 to 0.857. With a
 development-selected threshold, false-answer rate fell from 0.75 to 0.00 and

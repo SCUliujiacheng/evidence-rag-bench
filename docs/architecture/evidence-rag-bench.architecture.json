@@ -22,7 +22,7 @@
     { "id": "retriever", "type": "backend", "label": "Local Retrieval", "sublabel": "BM25 / TF-IDF / RRF Hybrid", "pos": [515, 120], "size": [175, 64], "sources": [{ "path": "src/evidence_rag_bench/retrieval/hybrid.py" }] },
     { "id": "reranker", "type": "cloud", "label": "Optional CrossEncoder", "sublabel": "Local MiniLM semantic re-rank", "pos": [755, 120], "size": [185, 64], "sources": [{ "path": "src/evidence_rag_bench/retrieval/rerank.py" }] },
     { "id": "corpus", "type": "database", "label": "Versioned Corpus", "sublabel": "15 licensed, hash-locked sources", "pos": [265, 120], "size": [175, 64], "sources": [{ "path": "data/corpus/open_source_manifest.jsonl" }] },
-    { "id": "benchmark", "type": "backend", "label": "Evaluation Runner", "sublabel": "Dev-only calibration + held-out test", "pos": [755, 285], "size": [185, 64], "sources": [{ "path": "src/evidence_rag_bench/evaluation/runner.py" }] },
+    { "id": "benchmark", "type": "backend", "label": "Evaluation Runner", "sublabel": "Dev tuning + fixed test", "pos": [755, 285], "size": [185, 64], "sources": [{ "path": "src/evidence_rag_bench/evaluation/runner.py" }] },
     { "id": "reports", "type": "database", "label": "JSON Reports", "sublabel": "Metrics, traces, provenance", "pos": [1010, 285], "size": [160, 64], "sources": [{ "path": "src/evidence_rag_bench/evaluation/runner.py" }] }
   ],
   "connections": [
@@ -32,7 +32,7 @@
     { "id": "index", "from": "corpus", "to": "retriever", "label": "deterministic chunks", "labelDy": 56 },
     { "id": "rerank", "from": "retriever", "to": "reranker", "label": "optional candidates", "variant": "dashed", "labelDy": -52 },
     { "id": "evaluate", "from": "retriever", "to": "benchmark", "label": "retrieval traces", "fromSide": "right", "toSide": "top" },
-    { "id": "write", "from": "benchmark", "to": "reports", "label": "provenance-rich JSON", "labelDy": 56 }
+    { "id": "write", "from": "benchmark", "to": "reports", "label": "report + run metadata", "labelDy": 56 }
   ],
   "cards": [
     { "dot": "emerald", "title": "Trust boundary", "items": ["Every returned citation must belong to returned evidence", "Low confidence returns an explicit abstention"] },

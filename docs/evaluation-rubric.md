@@ -1,7 +1,7 @@
 # Manual evaluation rubric
 
 When the corpus grows, sample answerable, ambiguous, insufficient, and
-unanswerable cases from the held-out set. Have two reviewers score each case
+unanswerable cases from the fixed test set. Have two reviewers score each case
 independently, then write down disagreements before changing a model or threshold.
 
 | Dimension | 0 | 1 | 2 |
@@ -12,6 +12,6 @@ independently, then write down disagreements before changing a model or threshol
 | Answer clarity | Misleading | Understandable but vague | Concise and scope-bounded |
 
 Record the case ID, corpus-manifest hash, Git revision, retrieval configuration,
-and reviewer rationale. Never use held-out labels to choose chunk size, RRF
+and reviewer rationale. Never use fixed test labels to choose chunk size, RRF
 weights, or abstention threshold; propose changes on development cases, then
-rerun the frozen held-out protocol.
+rerun the fixed regression protocol.

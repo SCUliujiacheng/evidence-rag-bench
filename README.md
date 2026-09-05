@@ -10,30 +10,30 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-0B7285.svg" alt="MIT License"></a>
 </p>
 
-[Why I built this](#why-i-built-this) · [What I wanted to check](#what-i-wanted-to-check) · [Architecture](#architecture) · [Run locally](#run-locally)
+[The question](#the-question-behind-this-repo) · [The experiment](#what-i-tested) · [Architecture](#architecture) · [Run locally](#run-locally)
 
 **English** · [简体中文](https://github.com/SCUliujiacheng/evidence-rag-bench-zh)
 
 </div>
 
-## Why I built this
+## The question behind this repo
 
-The question behind this repo is simple: when a RAG answer looks plausible, what did it actually retrieve? A fluent sentence is not much help if its path back to the source is blurry.
+I wanted a small experiment for one question: when a RAG answer looks plausible, what did it actually retrieve? If I cannot trace the answer to a passage, I cannot tell whether retrieval worked.
 
-This is a small, inspectable way to test that boundary. The inputs are versioned, retrieval is measured, citation IDs are checked against the evidence returned to the reader, and a weak match becomes an explicit abstention.
+I fixed a small technical corpus, ran BM25, TF-IDF, RRF Hybrid, and an optional CrossEncoder over the same chunks, then added two rules: a citation must point to evidence returned in that request, and a weak match becomes `abstain`. I also document that the test results were viewed during development.
 
 <p align="center">
   <img src="docs/screenshots/evidence-viewer.png" alt="Evidence RAG Bench showing an evidence-grounded answer with inspectable source chunks" width="100%">
 </p>
 
-<p align="center"><sub>The useful part is not the answer alone; it is being able to inspect the passage behind it.</sub></p>
+<p align="center"><sub>The viewer keeps the retrieved passages beside the answer.</sub></p>
 
-## What I wanted to check
+## What I tested
 
 | Question | What the repository does about it |
 | --- | --- |
 | Can someone rerun the same retrieval? | The 15 license-attributed source documents are hash-locked before deterministic chunking; the [corpus manifest](data/corpus/open_source_manifest.jsonl) and [validation code](src/evidence_rag_bench/corpus/manifest.py) are both here. |
-| Does one retriever merely sound better? | A versioned protocol with 25 development and 25 test cases (21 evidence-labelled cases per split) compares lexical, hybrid, and optional local semantic ranking; see the [benchmark results](docs/benchmark-results.md). |
+| How do the retrievers differ on the same cases? | A versioned protocol with 25 development and 25 test cases (21 evidence-labelled cases per split) compares lexical, hybrid, and optional local semantic ranking; see the [benchmark results](docs/benchmark-results.md). |
 | Is a citation actually from this answer's evidence? | Each citation must belong to the returned evidence. Low-confidence requests take the structured abstention path in the [grounding service](src/evidence_rag_bench/grounding/service.py). |
 | What happened on a particular run? | The [evaluation runner](src/evidence_rag_bench/evaluation/runner.py) keeps configuration, manifest hash, Git revision, metrics, latency, and per-case traces. |
 
@@ -51,7 +51,7 @@ flowchart LR
     Retrieval --> Corpus[(Versioned Corpus)]
     Retrieval -. optional .-> Reranker[Local CrossEncoder]
     Retrieval --> Eval[Evaluation Runner]
-    Eval --> Reports[Provenance-rich Reports]
+    Eval --> Reports[Reports with run metadata]
 ```
 
 ## Run locally
@@ -166,9 +166,9 @@ Responses include the decision (`answer` or `abstain`), a deterministic answer s
 
 Versioned JSONL development and test cases measure Recall@k, MRR@k, and nDCG@k over gold evidence IDs. The loader rejects duplicate case IDs, duplicate normalized questions, cross-split question reuse, and labels that conflict with answerability. Abstention thresholds are selected from development cases only. Generated reports record the corpus-manifest hash, Git revision, timestamp, and configuration under ignored `artifacts/reports/`.
 
-The test results were inspected during early development and influenced the demo retriever choice; the split also grew from 8 to 25 cases as the corpus expanded. The current v0.1 test data is therefore a reproducible regression snapshot, not evidence of blind generalization. From v0.1 onward, new model and parameter choices are made on development data first. Expanding the test split requires a new protocol version that preserves the old snapshot, and a new generalization claim requires a newly sealed, unseen test set. The historical choice is recorded in the [decision log](docs/decision-log.md).
+I looked at test results during early development when choosing the demo retriever, and the split grew from 8 to 25 cases as the corpus expanded. I now use the v0.1 test data as a fixed regression set, not as a blind evaluation. From v0.1 onward, new model and parameter choices are made on development data first. Expanding the test split requires a new protocol version that preserves the old snapshot. A new generalization claim would need a newly sealed, unseen test set. The history is recorded in the [decision log](docs/decision-log.md).
 
-The default demo uses fifteen hash-locked, license-attributed technical documents from FAISS, scikit-learn, and LangChain. This is a compact benchmark, not a general performance claim.
+The default demo uses fifteen hash-locked, license-attributed technical documents from FAISS, scikit-learn, and LangChain. Keep that small corpus in mind when reading the table.
 
 ## Notes and results
 
