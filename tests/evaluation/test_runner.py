@@ -1,7 +1,11 @@
 import hashlib
 import json
+import subprocess
+import sys
 from datetime import datetime
 from pathlib import Path
+
+import pytest
 
 from evidence_rag_bench.evaluation.cases import EvaluationCase
 from evidence_rag_bench.evaluation.runner import (
@@ -67,6 +71,29 @@ def test_build_retriever_selects_tfidf_baseline() -> None:
     assert retriever.search("lexical", k=1)[0].stage == "tfidf"
 
 
+def test_build_retriever_uses_cjk_tokens_for_chinese_tfidf() -> None:
+    chunks = [
+        Chunk(
+            doc_id="dense",
+            chunk_id="dense:0000",
+            source_url="https://example.org/dense",
+            text="稠密检索会比较向量表示。",
+            ordinal=0,
+        ),
+        Chunk(
+            doc_id="install",
+            chunk_id="install:0000",
+            source_url="https://example.org/install",
+            text="安装命令可以使用 pip。",
+            ordinal=0,
+        ),
+    ]
+
+    retriever = build_retriever("tfidf", chunks, profile_id="zh-v1")
+
+    assert retriever.search("怎样做稠密检索？", k=1)[0].chunk_id == "dense:0000"
+
+
 def test_build_retriever_selects_semantic_reranker_with_an_injected_scorer() -> None:
     class Scorer:
         def score(self, query: str, passages: list[str]) -> list[float]:
@@ -87,6 +114,21 @@ def test_build_retriever_selects_semantic_reranker_with_an_injected_scorer() -> 
     assert retriever.search("lexical", k=1)[0].stage == "rerank"
 
 
+def test_build_retriever_rejects_english_only_semantic_model_for_chinese_profile() -> None:
+    chunks = [
+        Chunk(
+            doc_id="notes",
+            chunk_id="notes:0000",
+            source_url="https://example.org/notes",
+            text="中文检索笔记",
+            ordinal=0,
+        )
+    ]
+
+    with pytest.raises(ValueError, match="does not support profile zh-v1"):
+        build_retriever("semantic-rerank", chunks, profile_id="zh-v1")
+
+
 def test_run_split_accepts_a_named_manifest_and_case_file(tmp_path: Path) -> None:
     corpus_dir = tmp_path / "data" / "corpus"
     eval_dir = tmp_path / "data" / "eval"
@@ -104,7 +146,7 @@ def test_run_split_accepts_a_named_manifest_and_case_file(tmp_path: Path) -> Non
         "sha256": hashlib.sha256(text_path.read_bytes()).hexdigest(),
         "scope_note": "fixture",
     }
-    (corpus_dir / "custom.jsonl").write_text(json.dumps(manifest), encoding="utf-8")
+    (corpus_dir / "open_source_manifest.jsonl").write_text(json.dumps(manifest), encoding="utf-8")
     case = {
         "case_id": "custom-001",
         "split": "dev",
@@ -114,17 +156,64 @@ def test_run_split_accepts_a_named_manifest_and_case_file(tmp_path: Path) -> Non
         "reference_answer": "similarity search",
         "notes": "fixture",
     }
-    (eval_dir / "custom_dev.jsonl").write_text(json.dumps(case), encoding="utf-8")
+    (eval_dir / "open_source_dev.jsonl").write_text(json.dumps(case), encoding="utf-8")
 
     report, _ = run_split(
         tmp_path,
         "dev",
         1,
-        manifest_filename="custom.jsonl",
-        case_filename="custom_dev.jsonl",
     )
 
     assert report.metrics["recall_at_1"] == 1.0
+
+
+def test_run_split_records_the_selected_profile() -> None:
+    project_root = Path(__file__).parents[2]
+
+    report, report_path = run_split(
+        project_root,
+        "test",
+        3,
+        retriever_name="hybrid",
+        profile_id="en-v1",
+    )
+
+    assert report.metadata["profile"] == "en-v1"
+    assert report.metadata["manifest_filename"] == "open_source_manifest.jsonl"
+    assert report.metadata["chunking_mode"] == "word-window"
+    assert report.metadata["chunk_size"] == "80"
+    assert report.metadata["chunk_overlap"] == "20"
+    assert report.metadata["tokenizer"] == "english-word"
+    assert len(report.metadata["indexed_corpus_sha256"]) == 64
+    assert report.metadata["index_scope"] == "full-document"
+    assert report_path.name == "open_source-hybrid-test.json"
+
+
+def test_cli_can_run_the_chinese_profile() -> None:
+    project_root = Path(__file__).parents[2]
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "evidence_rag_bench.evaluation.runner",
+            "--profile",
+            "zh-v1",
+            "--split",
+            "test",
+            "--retriever",
+            "hybrid",
+            "--k",
+            "3",
+        ],
+        cwd=project_root,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert json.loads(completed.stdout)["report_path"].endswith("zh_v1-hybrid-test.json")
 
 
 def test_grounded_benchmark_reports_abstention_metrics() -> None:
@@ -215,7 +304,7 @@ def test_run_grounded_split_records_threshold_calibrated_from_development_cases(
         "sha256": hashlib.sha256(text_path.read_bytes()).hexdigest(),
         "scope_note": "fixture",
     }
-    (corpus_dir / "custom.jsonl").write_text(json.dumps(manifest), encoding="utf-8")
+    (corpus_dir / "open_source_manifest.jsonl").write_text(json.dumps(manifest), encoding="utf-8")
     dev_case = {
         "case_id": "dev-001",
         "split": "dev",
@@ -231,18 +320,61 @@ def test_run_grounded_split_records_threshold_calibrated_from_development_cases(
         "split": "test",
         "question": "Does a vector index enable similarity search?",
     }
-    (eval_dir / "custom_dev.jsonl").write_text(json.dumps(dev_case), encoding="utf-8")
-    (eval_dir / "custom_test.jsonl").write_text(json.dumps(test_case), encoding="utf-8")
+    (eval_dir / "open_source_dev.jsonl").write_text(json.dumps(dev_case), encoding="utf-8")
+    (eval_dir / "open_source_test.jsonl").write_text(json.dumps(test_case), encoding="utf-8")
 
     report, _ = run_grounded_split(
         tmp_path,
         "test",
         top_k=1,
         retriever_name="hybrid",
-        manifest_filename="custom.jsonl",
-        case_filename="custom_test.jsonl",
-        calibration_case_filename="custom_dev.jsonl",
     )
 
-    assert report.metadata["threshold_source"] == "custom_dev.jsonl"
+    assert report.metadata["threshold_source"] == "open_source_dev.jsonl"
+    assert float(report.metadata["abstention_threshold"]) > 0.0
+
+
+@pytest.mark.parametrize(
+    ("override_name", "override_value"),
+    [
+        ("manifest_filename", "open_source_manifest.jsonl"),
+        ("case_filename", "open_source_test.jsonl"),
+    ],
+)
+def test_profile_rejects_files_from_another_benchmark(
+    override_name: str, override_value: str
+) -> None:
+    project_root = Path(__file__).parents[2]
+    kwargs = {override_name: override_value}
+
+    with pytest.raises(ValueError, match="does not belong to profile zh-v1"):
+        run_split(project_root, "test", 3, profile_id="zh-v1", **kwargs)
+
+
+def test_profile_rejects_another_profiles_calibration_cases() -> None:
+    project_root = Path(__file__).parents[2]
+
+    with pytest.raises(ValueError, match="does not belong to profile zh-v1"):
+        run_grounded_split(
+            project_root,
+            "test",
+            3,
+            profile_id="zh-v1",
+            calibration_case_filename="open_source_dev.jsonl",
+        )
+
+
+def test_chinese_grounded_run_uses_its_own_development_threshold() -> None:
+    project_root = Path(__file__).parents[2]
+
+    report, _ = run_grounded_split(
+        project_root,
+        "test",
+        top_k=3,
+        retriever_name="hybrid",
+        profile_id="zh-v1",
+    )
+
+    assert report.metadata["profile"] == "zh-v1"
+    assert report.metadata["threshold_source"] == "zh_v1_dev.jsonl"
     assert float(report.metadata["abstention_threshold"]) > 0.0

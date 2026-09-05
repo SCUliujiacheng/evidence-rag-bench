@@ -13,6 +13,11 @@
       <h1>Evidence RAG Bench</h1>
       <p class="lede">Search the fixed corpus. If the evidence is thin, the demo says so.</p>
       <form id="ask-form">
+        <label for="profile">Corpus</label>
+        <select id="profile" name="profile">
+          <option value="en-v1">English corpus (en-v1)</option>
+          <option value="zh-v1">中文语料（zh-v1）</option>
+        </select>
         <label for="question">Question</label>
         <textarea id="question" required maxlength="1000" placeholder="How can FAISS implement cosine similarity?"></textarea>
         <button type="submit">Find supporting passages</button>
