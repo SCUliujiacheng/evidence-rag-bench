@@ -24,16 +24,16 @@ form.addEventListener("submit", async (event) => {
   result.hidden = false;
   evidence.replaceChildren();
   if (!response.ok) {
-    status.textContent = "Request failed";
-    answer.textContent = body.detail || "The service could not process this question.";
+    status.textContent = "Could not run that search";
+    answer.textContent = body.detail || "The local service could not process this question.";
     reason.textContent = "";
     latency.textContent = "";
     return;
   }
-  status.textContent = body.status === "answer" ? "ANSWER WITH EVIDENCE" : "ABSTAINED";
+  status.textContent = body.status === "answer" ? "ANSWER — SOURCES BELOW" : "NO ANSWER FROM THIS CORPUS";
   answer.textContent = body.answer;
-  reason.textContent = body.reason ? `Reason: ${body.reason}` : "";
-  latency.textContent = `Latency: ${body.latency_ms.toFixed(1)} ms`;
+  reason.textContent = body.reason ? `Why: ${body.reason}` : "";
+  latency.textContent = `Search time: ${body.latency_ms.toFixed(1)} ms`;
   body.evidence.forEach((item) => {
     const card = document.createElement("article");
     card.className = "evidence-card";
@@ -41,7 +41,7 @@ form.addEventListener("submit", async (event) => {
     card.append(element("p", item.text));
     const link = document.createElement("a");
     link.href = item.source_url;
-    link.textContent = "Open source";
+    link.textContent = "Read the source";
     link.target = "_blank";
     link.rel = "noreferrer";
     card.append(link);

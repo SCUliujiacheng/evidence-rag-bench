@@ -2,7 +2,7 @@
 
 ## Protocol
 
-The benchmark uses fifteen hash-locked open-source technical documents from the
+This run uses fifteen hash-locked open-source technical documents from the
 FAISS (MIT), scikit-learn (BSD-3), and LangChain (MIT) repositories. The
 development and held-out test sets contain twenty-five cases each; twenty-one
 cases per split have evidence labels and four exercise ambiguity or out-of-corpus
@@ -18,12 +18,11 @@ chunker and `k=3`.
 | RRF Hybrid | **0.90** | 0.67 | 0.73 |
 | Hybrid + MiniLM CrossEncoder re-rank | 0.86 | **0.74** | **0.77** |
 
-BM25 and Hybrid tie on held-out Recall@3; Hybrid has a small first-rank and
-graded-ranking edge. The demo retains Hybrid because it also exposes a positive
-TF-IDF relevance signal for a safer answer/abstain contract. Common English
-stop words are removed in both lexical baselines. This is a compact corpus, so
-the table is evidence for engineering behavior rather than a claim of general
-RAG superiority.
+BM25 and Hybrid tie on held-out Recall@3; Hybrid is slightly better at the
+first rank and at graded ranking. The demo uses Hybrid because its positive
+TF-IDF relevance signal also gives the answer/abstain rule something to work
+with. Both lexical baselines remove common English stop words. With a corpus
+this small, the table describes this implementation, not RAG in general.
 
 The optional semantic run uses `cross-encoder/ms-marco-MiniLM-L6-v2`
 (Apache-2.0), re-ranking the top ten Hybrid candidates on CPU. It improves MRR
@@ -48,12 +47,12 @@ For the Hybrid run, the frozen development threshold was `0.146054`; on the
 held-out set it produced citation validity 1.00, citation precision/recall
 against gold 0.41/0.43, abstention precision 0.33, abstention recall 0.25,
 false-answer rate 0.75, and false-abstain rate 0.10.
-Those numbers are deliberately not presented as a success: `os-test-007`
-contains plausible LangChain vocabulary but asks for an unsupported
-recommendation, so lexical relevance still allows an incorrect answer. This is
-the project’s recorded next problem: a valid citation ID is not semantic
-support. Any semantic verifier must be calibrated only on development labels
-and reported on the held-out split without re-tuning.
+`os-test-007` keeps this from being a success story: it contains plausible
+LangChain vocabulary but asks for an unsupported recommendation, so lexical
+relevance still permits an incorrect answer. The next problem is plain: a
+valid citation ID is not semantic support. Any semantic verifier must be
+calibrated only on development labels and reported on the held-out split
+without re-tuning.
 
 The optional CrossEncoder run used only the development JSONL to select a
 threshold of `2.463407`. On the held-out set it recorded citation precision/

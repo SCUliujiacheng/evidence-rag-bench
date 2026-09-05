@@ -2,9 +2,9 @@
 
 ## Use a fixed, license-attributed corpus
 
-The benchmark keeps source URLs, license labels, retrieval date, local paths,
-and SHA-256 checksums in a versioned JSONL manifest. This makes an experiment
-reviewable and prevents a quietly changed web page from changing a result.
+The manifest keeps source URLs, license labels, retrieval date, local paths,
+and SHA-256 checksums in versioned JSONL. That lets someone trace a result back
+to the exact input, instead of trusting that an upstream page stayed still.
 
 ## Compare three local retrievers before adding providers
 
@@ -14,9 +14,9 @@ MRR@3 and nDCG@3, not because it was assumed to be better.
 
 After the corpus grew, BM25 led the development split on retrieval coverage,
 while Hybrid retained a positive TF-IDF relevance signal that lets the API
-abstain on an unseen query. The API therefore defaults to Hybrid for safe
-delivery; benchmark tables continue to show every retriever rather than
-claiming one universal winner.
+abstain on an unseen query. The API therefore defaults to Hybrid for the demo;
+benchmark tables still show every retriever rather than pretending there is one
+universal winner.
 
 ## Keep rank score separate from abstention confidence
 

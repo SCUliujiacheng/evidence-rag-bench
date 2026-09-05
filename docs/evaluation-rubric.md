@@ -1,8 +1,8 @@
 # Manual evaluation rubric
 
-For each future corpus expansion, sample answerable, ambiguous, insufficient,
-and unanswerable cases from the held-out set. Two reviewers independently score
-each case, then record disagreements before changing any model or threshold.
+When the corpus grows, sample answerable, ambiguous, insufficient, and
+unanswerable cases from the held-out set. Have two reviewers score each case
+independently, then write down disagreements before changing a model or threshold.
 
 | Dimension | 0 | 1 | 2 |
 | --- | --- | --- | --- |

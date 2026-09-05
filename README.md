@@ -2,7 +2,7 @@
 
 # Evidence RAG Bench
 
-**A compact RAG system that treats evidence—not fluent text—as the unit of trust.**
+**A small RAG benchmark for checking what an answer actually retrieved.**
 
 <p>
   <a href="https://github.com/SCUliujiacheng/evidence-rag-bench/actions/workflows/ci.yml"><img src="https://github.com/SCUliujiacheng/evidence-rag-bench/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
@@ -10,7 +10,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-0B7285.svg" alt="MIT License"></a>
 </p>
 
-[Why I built this](#why-i-built-this) · [Design tour](#three-minute-design-tour) · [Architecture](#architecture) · [Run locally](#run-locally)
+[Why I built this](#why-i-built-this) · [What I wanted to check](#what-i-wanted-to-check) · [Architecture](#architecture) · [Run locally](#run-locally)
 
 **English** · [简体中文](https://github.com/SCUliujiacheng/evidence-rag-bench-zh)
 
@@ -18,30 +18,30 @@
 
 ## Why I built this
 
-What interests me about RAG is not simply whether it can produce a convincing answer. I want to know whether a reader can inspect *why* the system answered—and whether the system can stop when its corpus cannot support a claim.
+The question behind this repo is simple: when a RAG answer looks plausible, what did it actually retrieve? A fluent sentence is not much help if its path back to the source is blurry.
 
-I built Evidence RAG Bench to make that boundary concrete. Inputs are versioned, retrieval is measured, citation IDs are checked against returned evidence, and insufficient evidence becomes an explicit abstention rather than a confident guess.
+This is a small, inspectable way to test that boundary. The inputs are versioned, retrieval is measured, citation IDs are checked against the evidence returned to the reader, and a weak match becomes an explicit abstention.
 
 <p align="center">
   <img src="docs/screenshots/evidence-viewer.png" alt="Evidence RAG Bench showing an evidence-grounded answer with inspectable source chunks" width="100%">
 </p>
 
-<p align="center"><sub>A local answer is useful only when the supporting evidence remains visible and verifiable.</sub></p>
+<p align="center"><sub>The useful part is not the answer alone; it is being able to inspect the passage behind it.</sub></p>
 
-## Three-minute design tour
+## What I wanted to check
 
-| Design concern | Inspectable evidence |
+| Question | What the repository does about it |
 | --- | --- |
-| Reproducible inputs | 15 license-attributed source documents are hash-locked before deterministic chunking; see the [corpus manifest](data/corpus/open_source_manifest.jsonl) and [validation code](src/evidence_rag_bench/corpus/manifest.py). |
-| Measured retrieval | A versioned protocol with 25 development and 25 test cases (21 evidence-labelled cases per split) compares lexical, hybrid, and optional local semantic ranking; see the [benchmark results](docs/benchmark-results.md). |
-| Grounded behavior | Every citation must belong to the returned evidence; low-confidence requests produce a structured abstention in the [grounding service](src/evidence_rag_bench/grounding/service.py). |
-| Inspectable delivery | Reports retain configuration, manifest hash, Git revision, metrics, latency, and per-case traces through the [evaluation runner](src/evidence_rag_bench/evaluation/runner.py). |
+| Can someone rerun the same retrieval? | The 15 license-attributed source documents are hash-locked before deterministic chunking; the [corpus manifest](data/corpus/open_source_manifest.jsonl) and [validation code](src/evidence_rag_bench/corpus/manifest.py) are both here. |
+| Does one retriever merely sound better? | A versioned protocol with 25 development and 25 test cases (21 evidence-labelled cases per split) compares lexical, hybrid, and optional local semantic ranking; see the [benchmark results](docs/benchmark-results.md). |
+| Is a citation actually from this answer's evidence? | Each citation must belong to the returned evidence. Low-confidence requests take the structured abstention path in the [grounding service](src/evidence_rag_bench/grounding/service.py). |
+| What happened on a particular run? | The [evaluation runner](src/evidence_rag_bench/evaluation/runner.py) keeps configuration, manifest hash, Git revision, metrics, latency, and per-case traces. |
 
 > **Current protocol-v0.1 snapshot at `k=3`:** RRF hybrid reaches **0.90 Recall@3** and **0.73 nDCG@3**. The optional local CrossEncoder reaches **0.74 MRR@3** and **0.77 nDCG@3**. It improves ranking quality, but it is a relevance model—not an entailment verifier. The [full protocol and results](docs/benchmark-results.md) include exact settings, failures, and limitations.
 
 ## Architecture
 
-[Open the interactive architecture](docs/architecture/evidence-rag-bench-architecture.html) to explore the request, retrieval, grounding, and evaluation paths. Its auditable source is checked in beside it as [JSON](docs/architecture/evidence-rag-bench.architecture.json).
+[Open the interactive architecture](docs/architecture/evidence-rag-bench-architecture.html) for the request, retrieval, grounding, and evaluation paths. The [JSON source](docs/architecture/evidence-rag-bench.architecture.json) sits beside it so the diagram is reviewable too.
 
 ```mermaid
 flowchart LR
@@ -160,7 +160,7 @@ curl -X POST http://127.0.0.1:8000/v1/ask \
 
 </details>
 
-Responses expose the decision (`answer` or `abstain`), a deterministic answer string, confidence, and chunk-level citations. Citation IDs in an `answer` response always refer to returned evidence; an abstention never invents a citation.
+Responses include the decision (`answer` or `abstain`), a deterministic answer string, confidence, and chunk-level citations. In an `answer` response, every citation ID refers to returned evidence; an abstention has no invented citation.
 
 ## What is evaluated
 
@@ -170,12 +170,10 @@ The test results were inspected during early development and influenced the demo
 
 The default demo uses fifteen hash-locked, license-attributed technical documents from FAISS, scikit-learn, and LangChain. This is a compact benchmark, not a general performance claim.
 
-## Design record
+## Notes and results
 
-The repository keeps its decisions inspectable rather than hiding them behind the final demo:
+For the details behind the demo:
 
-- [Design specification](docs/superpowers/specs/2026-09-01-evidence-rag-bench-design.md)
-- [Implementation plan](docs/superpowers/plans/2026-09-01-evidence-rag-bench-mvp.md)
 - [Data attribution](docs/data-attribution.md)
 - [Benchmark results](docs/benchmark-results.md)
 - [Optional semantic re-ranking protocol](docs/semantic-reranking.md)

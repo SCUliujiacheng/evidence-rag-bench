@@ -1,8 +1,8 @@
 # Optional local semantic re-ranking
 
-The default benchmark remains deterministic and dependency-light. This optional
-stage re-ranks a fixed lexical candidate set with a local CrossEncoder; it does
-not invent an answer, alter corpus content, or relax citation validation.
+The default path stays deterministic and light on dependencies. This optional
+stage re-ranks a fixed lexical candidate set with a local CrossEncoder. It does
+not write an answer, change corpus content, or loosen citation validation.
 
 ## Model choice
 
@@ -34,6 +34,5 @@ development-selected threshold, false-answer rate fell from 0.75 to 0.00 and
 abstention recall rose from 0.25 to 1.00; p50 latency rose to about 400ms. Full
 measurements and caveats are in [benchmark results](benchmark-results.md).
 
-Hybrid remains the default deterministic retriever because BM25 still wins
-retrieval coverage, the CrossEncoder adds CPU latency, and a relevance model is
-not yet an explicit answer-entailment verifier.
+Hybrid remains the default because BM25 still wins retrieval coverage, the
+CrossEncoder adds CPU latency, and relevance is not answer entailment.

@@ -71,3 +71,13 @@ def test_demo_serves_a_vector_favicon() -> None:
 
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("image/svg+xml")
+
+
+def test_homepage_sets_a_plain_expectation_for_the_evidence_viewer() -> None:
+    project_root = Path(__file__).parents[2]
+
+    response = TestClient(create_app(project_root)).get("/")
+
+    assert response.status_code == 200
+    assert "Search the fixed corpus. If the evidence is thin, the demo says so." in response.text
+    assert "Find supporting passages" in response.text
