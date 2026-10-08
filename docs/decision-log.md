@@ -1,4 +1,4 @@
-# Decision log
+# Retrieval design notes
 
 ## Use a fixed, license-attributed corpus
 
@@ -29,8 +29,8 @@ one token.
 Chinese chunks use 220 visible Unicode units with a 40-unit overlap. The
 chunker prefers a sentence-ending mark in the latter half of a window and
 returns an untouched slice of the source, so punctuation, newlines, and Latin
-model names stay readable. This is deliberately simpler than learned word
-segmentation and makes every chunk reproducible without another package.
+model names stay readable. The rule needs no segmentation model or extra
+package, and repeated runs produce the same chunks.
 
 ## Compare three local retrievers before adding providers
 
@@ -58,10 +58,9 @@ false answer.
 ## Do not run the English MiniLM experiment on Chinese
 
 `cross-encoder/ms-marco-MiniLM-L6-v2` is kept as the optional `en-v1`
-experiment. `semantic-rerank` rejects `zh-v1` instead of silently using an
-English-only checkpoint and presenting the result as Chinese support. A future
-multilingual reranker needs a named model, a development protocol, and a new
-reported comparison.
+experiment. The runner rejects `semantic-rerank` for `zh-v1` because the
+checkpoint was trained for English passage ranking. A multilingual reranker
+would need a separate model choice, development protocol, and comparison.
 
 ## Citation IDs are not factuality checks
 

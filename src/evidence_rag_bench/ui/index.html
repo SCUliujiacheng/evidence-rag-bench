@@ -3,32 +3,65 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Evidence RAG Bench</title>
+    <title>Retrieval notebook · Evidence RAG Bench</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
+    <header class="site-header">
+      <a class="wordmark" href="/">Evidence RAG Bench</a>
+      <nav aria-label="Project links">
+        <a href="https://github.com/SCUliujiacheng/evidence-rag-bench#readme" target="_blank" rel="noreferrer">Readme</a>
+        <a href="https://github.com/SCUliujiacheng/evidence-rag-bench" target="_blank" rel="noreferrer">GitHub</a>
+      </nav>
+    </header>
     <main>
-      <p class="eyebrow">FIXED CORPUS · LOCAL RETRIEVAL</p>
-      <h1>Evidence RAG Bench</h1>
-      <p class="lede">Search the fixed corpus. If the evidence is thin, the demo says so.</p>
-      <form id="ask-form">
-        <label for="profile">Corpus</label>
-        <select id="profile" name="profile">
-          <option value="en-v1">English corpus (en-v1)</option>
-          <option value="zh-v1">中文语料（zh-v1）</option>
-        </select>
-        <label for="question">Question</label>
-        <textarea id="question" required maxlength="1000" placeholder="How can FAISS implement cosine similarity?"></textarea>
-        <button type="submit">Find supporting passages</button>
-      </form>
-      <section id="result" aria-live="polite" hidden>
-        <p id="status" class="status"></p>
-        <p id="answer"></p>
-        <p id="reason"></p>
-        <p id="latency"></p>
-        <div id="evidence"></div>
-      </section>
+      <div class="page-heading">
+        <h1>Retrieval notebook</h1>
+        <p>Ask a question, then read the passages it brings back.</p>
+      </div>
+      <div class="workspace">
+        <aside class="query-panel" aria-labelledby="query-title">
+          <h2 id="query-title">Query</h2>
+          <form id="ask-form" aria-label="Search the corpus">
+            <label for="profile">Corpus</label>
+            <select id="profile" name="profile">
+              <option value="en-v1" selected>English · en-v1</option>
+              <option value="zh-v1">中文 · zh-v1</option>
+            </select>
+            <label for="question">Your question</label>
+            <textarea id="question" name="question" required maxlength="1000" rows="4" placeholder="How can FAISS implement cosine similarity?"></textarea>
+            <button class="submit-button" type="submit">Search</button>
+          </form>
+          <section class="examples" aria-labelledby="examples-title">
+            <h3 id="examples-title">Try a question</h3>
+            <div id="examples"></div>
+          </section>
+          <section class="corpus-summary" aria-labelledby="corpus-title">
+            <h3 id="corpus-title">In this corpus</h3>
+            <dl id="corpus-list"></dl>
+            <p id="corpus-note"></p>
+          </section>
+        </aside>
+        <section id="result" class="result-panel" aria-labelledby="results-title" aria-busy="false">
+          <header class="result-heading">
+            <h2 id="results-title">Results</h2>
+            <p id="result-meta"></p>
+          </header>
+          <div id="empty-state" class="empty-state">
+            <p>No search yet.</p>
+            <p>Write a question, or choose one of the examples.</p>
+          </div>
+          <div id="response" hidden>
+            <p id="submitted-question" class="submitted-question" hidden></p>
+            <p id="status" class="status" role="status" aria-live="polite"></p>
+            <p id="reason" class="reason" hidden></p>
+            <p id="latency" class="latency" hidden></p>
+            <div id="evidence" class="evidence-list"></div>
+          </div>
+          <p class="result-note">A relevance score alone cannot tell whether a passage answers the question.</p>
+        </section>
+      </div>
     </main>
     <script src="/app.js"></script>
   </body>

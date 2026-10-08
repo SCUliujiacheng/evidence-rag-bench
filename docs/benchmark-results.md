@@ -50,10 +50,9 @@ For the Hybrid run, the frozen development threshold was `0.146054`; on the
 fixed test set it produced citation validity 1.00, citation precision/recall
 against gold 0.41/0.43, abstention precision 0.33, abstention recall 0.25,
 false-answer rate 0.75, and false-abstain rate 0.10.
-`os-test-007` keeps this from being a success story: it contains plausible
-LangChain vocabulary but asks for an unsupported recommendation, so lexical
-relevance still permits an incorrect answer. The next problem is plain: a
-valid citation ID is not semantic support. Any semantic verifier must be
+`os-test-007` contains LangChain vocabulary but asks for a recommendation the
+source never makes. Its lexical score passes the threshold even though the
+passage does not support the requested conclusion. A semantic verifier must be
 calibrated only on development labels and reported on the fixed test split
 without re-tuning. Calling a result held out would require a new, sealed set.
 
@@ -89,11 +88,11 @@ question. These measurements were generated on 2026-09-06 at `k=3`.
 | TF-IDF + mixed tokenizer | **1.00** | 0.92 | **1.00** | **1.00** | **0.99** |
 | RRF Hybrid | **1.00** | **1.00** | **1.00** | **1.00** | **0.99** |
 
-Perfect Hybrid Recall@3 and MRR@3 need context. The corpus has only
-three documents, the six answerable questions use terminology present in those
-documents, and I viewed the cases while checking the new profile. It is a
-useful regression check for the tokenizer and chunk IDs, not evidence that the
-retriever generalizes to Chinese RAG workloads.
+The corpus has only three documents, and the six answerable questions use
+terminology present in them. The cases were also inspected while developing
+the profile. The high Recall@3 and MRR@3 are useful for regression checks of
+the tokenizer and chunk IDs, but do not establish performance on broader
+Chinese retrieval tasks.
 
 The threshold selected from `zh_v1_dev.jsonl` is `0.175402`. On the fixed test
 set, the grounded Hybrid run records citation validity 1.00, citation
@@ -107,8 +106,8 @@ threshold is better at rejecting clearly out-of-domain questions than at
 deciding semantic sufficiency, so the UI presents returned text as evidence to
 verify rather than a proven answer.
 
-The English-only MiniLM checkpoint is not run on `zh-v1`; the CLI rejects that
-combination instead of reporting a misleading multilingual number.
+The MiniLM experiment uses `en-v1` only; the CLI rejects that checkpoint with
+`zh-v1`.
 
 ## Reproduce
 

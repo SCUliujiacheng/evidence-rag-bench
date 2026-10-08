@@ -117,11 +117,12 @@ def test_homepage_sets_a_plain_expectation_for_the_evidence_viewer() -> None:
     response = TestClient(create_app(project_root)).get("/")
 
     assert response.status_code == 200
-    assert "Search the fixed corpus. If the evidence is thin, the demo says so." in response.text
-    assert "Find supporting passages" in response.text
+    assert "Ask a question, then read the passages it brings back." in response.text
+    assert "No search yet." in response.text
     assert "How can FAISS implement cosine similarity?" in response.text
     assert '<select id="profile"' in response.text
-    assert '<option value="zh-v1">中文语料' in response.text
+    assert '<option value="zh-v1">中文 · zh-v1' in response.text
+    assert '<option value="en-v1" selected>' in response.text
 
 
 def test_demo_explains_abstention_reasons_in_plain_english() -> None:
@@ -130,12 +131,11 @@ def test_demo_explains_abstention_reasons_in_plain_english() -> None:
     response = TestClient(create_app(project_root)).get("/app.js")
 
     assert response.status_code == 200
-    assert 'insufficient_evidence: "Not enough evidence was retrieved"' in response.text
-    assert "RELEVANT EVIDENCE FOUND — VERIFY BELOW" in response.text
+    assert "The results did not reach this corpus's relevance threshold." in response.text
+    assert "Related passages found. Check them against the question." in response.text
     assert "ANSWER — SOURCES BELOW" not in response.text
-    assert "Reason:" in response.text
     assert "function readableSource(text)" in response.text
-    assert "excerpt(item.text)" in response.text
+    assert 'element("pre", item.text)' in response.text
 
 
 def test_demo_sends_the_selected_profile_with_each_question() -> None:
@@ -144,4 +144,4 @@ def test_demo_sends_the_selected_profile_with_each_question() -> None:
     response = TestClient(create_app(project_root)).get("/app.js")
 
     assert response.status_code == 200
-    assert "profile: profile.value" in response.text
+    assert "profile: selectedProfile" in response.text
