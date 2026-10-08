@@ -43,8 +43,8 @@ The two Apache repositories do not contain a `NOTICE` file at these revisions.
 The Milvus README is stored as the complete raw file, including the long
 contributor-avatar section near its end. Its manifest sets
 `index_end_marker: "### All contributors"`, so chunking stops before those
-avatars. This keeps the upstream file and SHA-256 honest while leaving the
-non-technical tail out of retrieval. Reports include the marker rule and a
+avatars. The stored upstream file and its SHA-256 remain unchanged, while the
+non-technical tail is excluded from retrieval. Reports include the marker rule and a
 separate `indexed_corpus_sha256` for the exact bytes sent to chunking.
 
 With the `zh-v1` 220-unit window and 40-unit overlap, the indexed ranges make

@@ -1,199 +1,91 @@
-<div align="center">
-
 # Evidence RAG Bench
 
-**A small English-and-Chinese RAG benchmark for checking what an answer actually retrieved.**
+Retrieval experiments on small English and Chinese document collections.
 
-<p>
-  <a href="https://github.com/SCUliujiacheng/evidence-rag-bench/actions/workflows/ci.yml"><img src="https://github.com/SCUliujiacheng/evidence-rag-bench/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <img src="https://img.shields.io/badge/Python-3.12-3776AB?logo=python&amp;logoColor=white" alt="Python 3.12">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-0B7285.svg" alt="MIT License"></a>
-</p>
+[简体中文](https://github.com/SCUliujiacheng/evidence-rag-bench-zh) · [Results](docs/benchmark-results.md) · [Design notes](docs/decision-log.md) · [CI](https://github.com/SCUliujiacheng/evidence-rag-bench/actions/workflows/ci.yml)
 
-[The question](#the-question-behind-this-repo) · [The experiment](#what-i-tested) · [Architecture](#architecture) · [Run locally](#run-locally)
+A passage can mention the right topic without containing the detail a question asks for. One case here asks for a search algorithm used by PaddlePaddle: the README describes automatic parallelization, but never names the algorithm. Lexical retrieval finds that passage and still lets the request through.
 
-**English** · [简体中文](https://github.com/SCUliujiacheng/evidence-rag-bench-zh)
+This repository compares BM25, TF-IDF, and reciprocal-rank fusion on fixed document snapshots, then checks citations and abstention. The viewer shows the retrieved text; the evaluation runner saves rankings and decisions for each case. The default implementation returns source excerpts and runs locally without a generation model, API key, or GPU.
 
-</div>
+![Retrieval viewer showing source passages](docs/screenshots/evidence-viewer.png)
 
-## The question behind this repo
+## Experiment setup
 
-I wanted a small experiment for one question: when a RAG answer looks plausible, what did it actually retrieve? If I cannot trace the answer to a passage, I cannot tell whether retrieval worked.
+| Profile | Documents | Chunking | Dev / test cases |
+| --- | --- | --- | ---: |
+| `en-v1` | 15 documents from FAISS, scikit-learn, and LangChain | 80 words, overlap 20 | 25 / 25 |
+| `zh-v1` | 3 Chinese READMEs from Milvus, PaddlePaddle, and FlagEmbedding | 220 visible Unicode units, overlap 40 | 9 / 9 |
 
-I fixed two small technical corpora, ran BM25, TF-IDF, and RRF Hybrid over the same chunks, then added two rules: a citation must point to evidence returned in that request, and a weak match becomes `abstain`. The English profile also has an optional CrossEncoder experiment. I record where the documents came from and note that I viewed both test sets while developing the project.
+Each profile has its own index, evidence labels, and development threshold. Chinese retrieval uses character bigrams alongside Latin words and numbers. Both corpora are stored in the repository and checked by SHA-256; the Chinese sources also point to exact upstream commits. See [corpus attribution](docs/data-attribution.md) for sources, licenses, and the exclusion of the Milvus contributor-avatar section from indexing.
 
-<p align="center">
-  <img src="docs/screenshots/evidence-viewer.png" alt="Evidence RAG Bench showing an evidence-grounded answer with inspectable source chunks" width="100%">
-</p>
+The English fixed test set gives these results at `k=3`, over its 21 answerable cases:
 
-<p align="center"><sub>The viewer keeps the retrieved passages beside the answer.</sub></p>
+| Retriever | Recall@3 | MRR@3 | nDCG@3 |
+| --- | ---: | ---: | ---: |
+| BM25 | 0.90 | 0.66 | 0.72 |
+| TF-IDF | 0.86 | 0.62 | 0.68 |
+| RRF Hybrid | 0.90 | 0.67 | 0.73 |
+| Hybrid + MiniLM reranker | 0.86 | 0.74 | 0.77 |
 
-## What I tested
-
-| Question | What the repository does about it |
-| --- | --- |
-| Can someone rerun the same retrieval? | `en-v1` locks 15 vendored English files by SHA-256; `zh-v1` additionally points its 3 Chinese files at exact upstream commits. Both record source and license details before chunking; see the [data attribution](docs/data-attribution.md). |
-| How do the retrievers differ on the same cases? | Each profile has separate development and fixed test JSONL. The English split has 25 cases; the Chinese split has 9. See the [benchmark results](docs/benchmark-results.md). |
-| Is a citation actually from this answer's evidence? | Each citation must belong to the returned evidence. Low-confidence requests take the structured abstention path in the [grounding service](src/evidence_rag_bench/grounding/service.py). |
-| What happened on a particular run? | The [evaluation runner](src/evidence_rag_bench/evaluation/runner.py) keeps configuration, manifest hash, Git revision, metrics, latency, and per-case traces. |
-
-> **Current `k=3` snapshots:** on `en-v1`, RRF Hybrid reaches **0.90 Recall@3** and **0.73 nDCG@3**. On the smaller `zh-v1` set it reaches **1.00 Recall@3**, **1.00 MRR@3**, and **0.99 nDCG@3**. Those are fixed regression numbers from small corpora, not general RAG scores. The [full results](docs/benchmark-results.md) include the much less flattering abstention results too.
-
-## Architecture
-
-[Open the interactive architecture](docs/architecture/evidence-rag-bench-architecture.html) for the request, retrieval, grounding, and evaluation paths. The [JSON source](docs/architecture/evidence-rag-bench.architecture.json) sits beside it so the diagram is reviewable too.
-
-```mermaid
-flowchart LR
-    UI[Evidence Viewer] --> API[FastAPI]
-    API --> Guard[Grounding Guardrail]
-    Guard --> Retrieval[Local Retrieval]
-    Retrieval --> Corpus[(Versioned Corpus)]
-    Retrieval -. optional .-> Reranker[Local CrossEncoder]
-    Retrieval --> Eval[Evaluation Runner]
-    Eval --> Reports[Reports with run metadata]
-```
+The reranker improves the first relevant rank but loses some top-three coverage. Hybrid also answers 3 of the 4 English cases labeled as non-answerable, despite valid citation IDs. The Chinese Hybrid run retrieves all labeled chunks in the top three, but answers 2 of its 3 non-answerable cases. These failures are included in the [full results](docs/benchmark-results.md).
 
 ## Run locally
 
-The default hybrid path needs Python 3.12 and [`uv`](https://docs.astral.sh/uv/), but no API key or GPU. The English repository starts on `en-v1`; use `--profile zh-v1` for the Chinese corpus.
-
-**PowerShell**
-
-```powershell
-uv sync --python 3.12
-uv run pytest -v
-uv run python -m evidence_rag_bench.evaluation.runner `
-  --profile en-v1 `
-  --split dev `
-  --k 3 `
-  --retriever hybrid
-uv run python -m evidence_rag_bench.evaluation.runner `
-  --profile zh-v1 `
-  --split test `
-  --k 3 `
-  --retriever hybrid
-uv run uvicorn evidence_rag_bench.api.app:create_app `
-  --factory `
-  --port 8000
-```
-
-<details>
-<summary>Bash / Git Bash equivalent</summary>
-
-```bash
-uv sync --python 3.12
-uv run pytest -v
-uv run python -m evidence_rag_bench.evaluation.runner \
-  --profile en-v1 \
-  --split dev \
-  --k 3 \
-  --retriever hybrid
-uv run python -m evidence_rag_bench.evaluation.runner \
-  --profile zh-v1 \
-  --split test \
-  --k 3 \
-  --retriever hybrid
-uv run uvicorn evidence_rag_bench.api.app:create_app \
-  --factory \
-  --port 8000
-```
-
-</details>
-
-Open `http://127.0.0.1:8000/`, choose **English corpus** or **中文语料**, and ask a question. The viewer returns either evidence-bound citations or an explicit abstention.
-
-<details>
-<summary>An existing Windows checkout reports a corpus checksum mismatch</summary>
-
-The byte-preservation rule applies automatically to fresh checkouts. If the repository was checked out before that rule existed, first make sure `git status --short -- data/corpus` prints nothing, then refresh only the tracked corpus files once:
+Install Python 3.12 and [uv](https://docs.astral.sh/uv/), then run from the repository root. These commands work in PowerShell and Bash:
 
 ```text
-git rm -r --cached -- data/corpus
-git restore --source=HEAD --staged --worktree -- data/corpus
+uv sync --python 3.12
+uv run uvicorn evidence_rag_bench.api.app:create_app --factory --port 8000
 ```
 
-</details>
+Open `http://127.0.0.1:8000/`. The English repository starts on `en-v1`; the corpus selector also offers `zh-v1`. Try `How does FAISS support cosine similarity?`
 
-To reproduce the optional semantic re-ranking experiment:
+In another terminal:
 
-```powershell
+```text
+uv run python -m evidence_rag_bench.evaluation.runner --profile en-v1 --split test --retriever hybrid --k 3
+uv run python -m evidence_rag_bench.evaluation.runner --profile en-v1 --split test --retriever hybrid --k 3 --mode grounded
+uv run pytest -v
+```
+
+The first evaluation measures retrieval; `--mode grounded` adds citation and abstention checks. Change the profile to `zh-v1` for Chinese, or the retriever to `bm25` or `tfidf` for a baseline. Reports go to `artifacts/reports/` with the configuration, corpus hashes, Git revision, and per-case traces.
+
+The optional English reranking experiment needs an extra dependency and a model download:
+
+```text
 uv sync --extra semantic --python 3.12
-uv run --extra semantic python -m evidence_rag_bench.evaluation.runner `
-  --profile en-v1 `
-  --split test `
-  --retriever semantic-rerank `
-  --k 3
+uv run --extra semantic python -m evidence_rag_bench.evaluation.runner --profile en-v1 --split test --retriever semantic-rerank --k 3
 ```
 
-<details>
-<summary>Bash / Git Bash equivalent</summary>
+The MiniLM checkpoint used here was trained on English MS MARCO; `semantic-rerank` rejects `zh-v1`. Details are in the [reranking notes](docs/semantic-reranking.md).
 
-```bash
-uv sync --extra semantic --python 3.12
-uv run --extra semantic python -m evidence_rag_bench.evaluation.runner \
-  --profile en-v1 \
-  --split test \
-  --retriever semantic-rerank \
-  --k 3
+## API
+
+Interactive documentation is at `http://127.0.0.1:8000/docs`. Send this body to `POST /v1/ask`:
+
+```json
+{
+  "profile": "en-v1",
+  "question": "How does FAISS support cosine similarity?",
+  "top_k": 3
+}
 ```
 
-</details>
+The response includes the profile, status, source excerpt, evidence, citations, latency, and trace ID. The existing field name `answer` holds the top-ranked excerpt. `status=answer` means the relevance threshold and citation-ID check passed; it does not establish that the passage supports every part of the question.
 
-The MiniLM checkpoint used here was trained for English passage ranking, so `semantic-rerank` deliberately rejects `zh-v1`. The Chinese profile stays on the dependency-free lexical and hybrid paths until a multilingual reranker gets its own protocol.
+## Design notes
 
-## API example
+- **Keep the baselines inspectable.** All three local retrievers rank the same chunks. Hybrid combines the rankings and retains a separate TF-IDF score for abstention; the RRF rank score is not used as confidence.
+- **Calibrate per corpus.** Each profile selects its threshold from its own development cases. Tokenization, chunking, and thresholds do not carry across languages.
+- **Keep reranking optional.** MiniLM adds a useful comparison, but it also adds CPU latency and does not verify entailment. Hybrid remains the default.
 
-```powershell
-$body = @{
-  profile = "zh-v1"
-  question = "BGE-M3 支持哪三种检索方式？"
-  top_k = 3
-} | ConvertTo-Json
+The [architecture diagram](docs/architecture/evidence-rag-bench-architecture.html) and its [JSON source](docs/architecture/evidence-rag-bench.architecture.json) show how retrieval, threshold selection, and evaluation fit together.
 
-Invoke-RestMethod `
-  -Method Post `
-  -Uri "http://127.0.0.1:8000/v1/ask" `
-  -ContentType "application/json" `
-  -Body $body
-```
+## Limits and open questions
 
-<details>
-<summary>Bash / Git Bash equivalent</summary>
+Both test sets were inspected during development. They are fixed regression sets, and the corpora are too small to support broad claims about RAG or Chinese retrieval. The Chinese questions also share terminology with the source documents.
 
-```bash
-curl -X POST http://127.0.0.1:8000/v1/ask \
-  -H "content-type: application/json" \
-  -d '{"profile":"zh-v1","question":"BGE-M3 支持哪三种检索方式？","top_k":3}'
-```
+Paraphrases and questions with missing details are useful next cases: they test lexical coverage and evidence sufficiency separately. A semantic-support check would need its own annotations. New model or threshold choices belong on development data; a generalization claim needs a separate, unseen test set.
 
-</details>
-
-Responses include the selected profile, the decision (`answer` or `abstain`), a deterministic answer string, search latency, evidence, and chunk-level citations. In an `answer` response, every citation ID refers to returned evidence; an abstention has no invented citation.
-
-The score threshold is most useful for questions far outside the corpus. A
-question can still mention the right topic while asking for a detail or
-preference the passage never states. The viewer therefore says **relevant
-evidence found—verify below**, not that it proved an answer.
-
-## What is evaluated
-
-Versioned JSONL development and test cases measure Recall@k, MRR@k, and nDCG@k over gold evidence IDs. The loader rejects duplicate case IDs, duplicate normalized questions, cross-split question reuse, and labels that conflict with answerability. Each profile selects its own abstention threshold from its development cases. Generated reports record the profile, corpus-manifest hash, Git revision, timestamp, and configuration under ignored `artifacts/reports/`.
-
-I looked at the English test results during early development when choosing the demo retriever, and I used the Chinese test questions while checking the new tokenizer and chunker. Both are now fixed regression sets, not blind evaluations. New model and parameter choices belong on the matching development split first. A generalization claim would need a newly sealed, unseen test set. The history is recorded in the [decision log](docs/decision-log.md).
-
-The default demo uses fifteen English documents from FAISS, scikit-learn, and LangChain. `zh-v1` adds three Chinese README snapshots from Milvus, PaddlePaddle, and FlagEmbedding. Keep those small corpora in mind when reading the tables.
-
-## Notes and results
-
-For the details behind the demo:
-
-- [Data attribution](docs/data-attribution.md)
-- [Benchmark results](docs/benchmark-results.md)
-- [Optional semantic re-ranking protocol](docs/semantic-reranking.md)
-- [Decision log](docs/decision-log.md)
-- [Manual evaluation rubric](docs/evaluation-rubric.md)
-
-## License
-
-The project code is released under the [MIT License](LICENSE). Corpus documents retain their upstream licenses; see [data attribution](docs/data-attribution.md).
+See the [decision log](docs/decision-log.md), [manual evaluation rubric](docs/evaluation-rubric.md), and [corpus attribution](docs/data-attribution.md). Code is under the [MIT License](LICENSE); source documents retain their upstream licenses.

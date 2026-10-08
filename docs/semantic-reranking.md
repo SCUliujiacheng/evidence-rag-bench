@@ -31,7 +31,7 @@ candidate depth alongside the existing lexical configuration. A run may use
 development cases to choose a threshold, but it must not change the fixed test
 labels or tune on them.
 
-## Acceptance gate
+## Results from this run
 
 The initial CPU experiment (15-document corpus, 25 fixed test cases,
 candidate depth 10) improved Hybrid MRR@3 from 0.667 to 0.738 and nDCG@3 from
@@ -41,5 +41,5 @@ abstention recall rose from 0.25 to 1.00; p50 latency was about 410ms in the
 current CPU run. Full
 measurements and caveats are in [benchmark results](benchmark-results.md).
 
-Hybrid remains the default because BM25 still wins retrieval coverage, the
-CrossEncoder adds CPU latency, and relevance is not answer entailment.
+Hybrid remains the default. It ties BM25 on English test Recall@3, while the
+CrossEncoder adds CPU latency and still needs a separate support check.
