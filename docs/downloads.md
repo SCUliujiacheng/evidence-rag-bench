@@ -1,9 +1,11 @@
 # Download and install
 
 Choose the `v0.3.0` prerelease from [GitHub Releases](https://github.com/SCUliujiacheng/evidence-rag-bench/releases).
-The release page lists the attachments produced by successful platform builds,
-their smoke-test reports, and `SHA256SUMS`. The automatically generated “Source
-code” archives are for development; use the named application attachment below.
+The release page includes the four application attachments below, `SHA256SUMS.txt`
+and `build-manifest.json`. Smoke-test reports are available in the matching
+GitHub Actions run's artifacts, not as Release attachments. The automatically
+generated “Source code” archives are for development; use the named application
+attachment below.
 
 | Device | Application attachment |
 | --- | --- |
@@ -21,7 +23,7 @@ Quit controls. Closing a browser tab does not stop the local process.
 These first packages are previews. Windows builds have no publisher certificate,
 and macOS builds are not Developer ID signed or notarized. The operating system
 may identify them as an unknown publisher or block opening. Check the repository,
-release version and `SHA256SUMS` before deciding whether to allow a preview build.
+release version and `SHA256SUMS.txt` before deciding whether to allow a preview build.
 Automated smoke tests are not a claim of physical-device certification.
 
 On Android, download the APK to the device and open it through the system installer.
