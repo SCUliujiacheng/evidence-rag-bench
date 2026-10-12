@@ -50,7 +50,8 @@ Desktop evaluation reports are separate from the installed app:
 | macOS | `~/Library/Application Support/evidence-rag-bench/artifacts/reports` |
 
 The Android viewer does not save questions or answers; its runtime files stay in
-the app's private storage. Replacing a desktop application folder does not remove
+the app's private storage. Android system cloud backup and device-to-device transfer
+are disabled for this app. Replacing a desktop application folder does not remove
 its user-data directory. Copy reports you want to retain before deleting that
 directory or uninstalling the Android app. Installation resources never serve as
 the writable report directory.
