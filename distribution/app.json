@@ -1,0 +1,14 @@
+{
+  "slug": "evidence-rag-bench",
+  "name": "Evidence RAG Bench",
+  "version": "0.3.0",
+  "desktop_module": "distribution.desktop_app",
+  "python_package": "evidence_rag_bench",
+  "python_distribution": "evidence-rag-bench",
+  "export_paths": [],
+  "health_path": "/health",
+  "default_profile": "en-v1",
+  "language": "en",
+  "android_application_id": "org.sculiujiacheng.rag.en",
+  "android_version_code": 30000
+}

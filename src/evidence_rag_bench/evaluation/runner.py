@@ -223,10 +223,13 @@ def run_split(
     manifest_filename: str | None = None,
     case_filename: str | None = None,
     profile_id: str = DEFAULT_PROFILE_ID,
+    *,
+    artifacts_dir: Path | None = None,
+    build_revision: str | None = None,
 ) -> tuple[BenchmarkReport, Path]:
     """Build a local BM25 index, evaluate one split, and persist the report."""
 
-    settings = get_settings(project_root)
+    settings = get_settings(project_root, artifacts_dir)
     profile = get_profile(profile_id)
     expected_case_filename = (
         profile.dev_case_filename if split == "dev" else profile.test_case_filename
@@ -266,7 +269,7 @@ def run_split(
         k,
         {
             "corpus_manifest_sha256": hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
-            "git_revision": git_revision(settings.project_root),
+            "git_revision": build_revision or git_revision(settings.project_root),
             "created_at": datetime.now(UTC).isoformat(),
             "split": split,
             "retriever": retriever_name,

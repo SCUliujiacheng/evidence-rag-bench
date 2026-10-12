@@ -2,6 +2,8 @@
 
 Retrieval experiments on small English and Chinese document collections.
 
+[Download apps](https://github.com/SCUliujiacheng/evidence-rag-bench/releases) · [Installation guide](docs/downloads.md)
+
 [简体中文](https://github.com/SCUliujiacheng/evidence-rag-bench-zh) · [Results](docs/benchmark-results.md) · [Design notes](docs/decision-log.md) · [CI](https://github.com/SCUliujiacheng/evidence-rag-bench/actions/workflows/ci.yml)
 
 A passage can mention the right topic without containing the detail a question asks for. One case here asks for a search algorithm used by PaddlePaddle: the README describes automatic parallelization, but never names the algorithm. Lexical retrieval finds that passage and still lets the request through.
@@ -31,6 +33,9 @@ The English fixed test set gives these results at `k=3`, over its 21 answerable 
 The reranker improves the first relevant rank but loses some top-three coverage. Hybrid also answers 3 of the 4 English cases labeled as non-answerable, despite valid citation IDs. The Chinese Hybrid run retrieves all labeled chunks in the top three, but answers 2 of its 3 non-answerable cases. These failures are included in the [full results](docs/benchmark-results.md).
 
 ## Run locally
+
+The [desktop and Android edition notes](docs/download-editions.md) explain the
+offline download behavior, report storage, and the mobile feature limits.
 
 Install Python 3.12 and [uv](https://docs.astral.sh/uv/), then run from the repository root. These commands work in PowerShell and Bash:
 
